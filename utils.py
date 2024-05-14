@@ -7,7 +7,6 @@ import matplotlib.ticker as ticker
 import seaborn as sns
 import torch
 from itertools import chain, combinations
-from algos.ardqn.policies import DQNPolicy
 import random
 #from sklearn.preprocessing import MinMaxScaler
 #from sklearn import preprocessing

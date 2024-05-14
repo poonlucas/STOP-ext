@@ -11,8 +11,6 @@ import copy
 
 import torch
 
-from algos.callbacks.ContinualEvalCallback import ContinualEvalCallback
-
 from policies import LQ, LSR, LCQ, LSCQ, MaxWeight, Random,\
 LASQ, LSQ, Threshold, LSQNModel, MWNModel, LQNModel, CleanRLPolicy
 from server_allocation import SAQueue, SANetwork
