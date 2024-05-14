@@ -249,6 +249,7 @@ class ARPPO:
             if time[-1] % print_freq == 0:
                 denom = np.arange(1, len(backlog) + 1)
                 avg_backlog = np.divide(np.cumsum(backlog), denom)
+                print (avg_backlog)
         
         self.time = time
         self.backlog = backlog

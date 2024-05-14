@@ -1,4 +1,4 @@
-# Learning to Stabilize Online Reinforcement Learning in Unbounded State Spaces
+# Learning to Stabilize Online Reinforcement Learning in Unbounded State Spaces (ICML 2024)
 
 This is the source code accompanying the paper [***Learning to Stabilize Online Reinforcement Learning in Unbounded State Spaces***](https://arxiv.org/abs/2306.01896) by Brahma S. Pavse, Matthew Zurek, Yudong Chen, Qiaomin Xie, Josiah P. Hanna.
 
