@@ -8,7 +8,7 @@ conda env create -f environment.yml
 ```
 
 ## Running the code
-To execute the code run:
+Generic command:
 ```
 python run_single_continual.py  --outfile <result_file> --env_name <queue/nmodel> --mdp_num <0/1/2> --deployed_interaction_steps 5_000_000  --exp_name <exp_name>  --reward_function <opt/stab>  --seed 0  --truncated_horizon 200 --algo_name <algo_name> --lr 3e-4 --state_transformation <state_trans> --lyp_power <p> --adam_beta 0.9
 ```
@@ -19,6 +19,10 @@ where,
 - `state_transformation` is either `id, sigmoid, symsqrt, symloge`
 - `lyp_power` is any floating number (p from the paper)
 
+Example command:
+```
+python run_single_continual.py  --outfile result_file --env_name queue --mdp_num 2 --deployed_interaction_steps 5_000_000  --exp_name test  --reward_function stab  --seed 0  --truncated_horizon 200 --algo_name STOP-3 --lr 3e-4 --state_transformation sigmoid --lyp_power 3 --adam_beta 0.9
+```
 ## Citation
 If you found any part of this code useful, please consider citing our paper:
 
