@@ -4,7 +4,7 @@ This is the source code accompanying the paper [***Learning to Stabilize Online 
 
 ## Setting up the environment
 ```
-conda create --name <env> --file requirements.txt
+conda env create -f environment.yml
 ```
 
 ## Running the code
