@@ -255,13 +255,20 @@ class SANetwork(gym.Env):
         metric = curr_lengths - prev_lengths
         return metric 
 
-    def reward_function(self, state = None, action = None, next_state = None, pre_arrial_state = None):
+    def reward_function(self, state = None, action = None, next_state = None, pre_arrival_state = None):
 
         avg_q_len = self._avg_backlog(state, next_state)
         change_avg_q_len = self._backlog_change(state, next_state)
 
         if self.reward_func == 'opt':
             reward = -1 * avg_q_len
+        elif 'stab-pow' in self.reward_func:
+            opt_rew = -avg_q_len
+            if np.abs(self.lyp_power - 1) <= 1e-5:
+                opt_rew = 1. / (avg_q_len + 1)
+            prev_lens = np.power(np.mean(state[:len(self.qs)] - self.goal), self.lyp_power)
+            curr_lens = np.power(np.mean(next_state[:len(self.qs)] - self.goal), self.lyp_power)
+            reward = -1 * (curr_lens - prev_lens) + opt_rew
         elif 'stab' in self.reward_func:
             opt_rew = -avg_q_len
             if np.abs(self.lyp_power - 1) <= 1e-5:

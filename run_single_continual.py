@@ -14,6 +14,7 @@ from policies import LQ, LSR, LCQ, LSCQ, MaxWeight, Random,\
 LASQ, LSQ, Threshold, LSQNModel, MWNModel, LQNModel, CleanRLPolicy
 from server_allocation import SAQueue, SANetwork
 from nmodel import NModelNetwork
+from criss_cross import CrissCrossNetwork
 import utils
 
 def str2bool(v):
@@ -197,6 +198,25 @@ def get_env():
             arrivals = [0.9, 0.8]
             holding_costs = [3., 1.]
             mus = [1., 0.9, 0.8]
+    elif FLAGS.env_name == 'crisscross':
+        if FLAGS.mdp_num == 0:  # imbalanced low traffic (IL)
+            arrivals = [0.3, 0.0, 0.3]
+            mus = [2., 1.5, 2.]
+        elif FLAGS.mdp_num == 1:  # imbalanced medium traffic (IM)
+            arrivals = [0.6, 0.0, 0.6]
+            mus = [2., 1.5, 2.]
+        elif FLAGS.mdp_num == 2:  # imbalanced heavy traffic (IH)
+            arrivals = [0.9, 0.0, 0.9]
+            mus = [2., 1.5, 2.]
+        elif FLAGS.mdp_num == 3:  # balanced low traffic (BL)
+            arrivals = [0.3, 0.0, 0.3]
+            mus = [2., 1., 2.]
+        elif FLAGS.mdp_num == 4:  # balanced medium traffic (BM)
+            arrivals = [0.6, 0.0, 0.6]
+            mus = [2., 1., 2.]
+        elif FLAGS.mdp_num == 5:  # balanced high traffic (BH)
+            arrivals = [0.9, 0.0, 0.9]
+            mus = [2., 1., 2.]
 
     if FLAGS.env_name == 'gridworld' or FLAGS.env_name == 'queue':
         env = SANetwork(qs, reward_func = FLAGS.reward_function,\
@@ -213,6 +233,13 @@ def get_env():
                 state_trans = FLAGS.state_transformation,
                 state_bound = FLAGS.state_bound,
                 lyp_power = FLAGS.lyp_power)
+    elif FLAGS.env_name == 'crisscross':
+        env = CrissCrossNetwork(arrivals,
+                                mus,
+                                reward_func = FLAGS.reward_function,
+                                state_trans = FLAGS.state_transformation,
+                                state_bound = FLAGS.state_bound,
+                                lyp_power = FLAGS.lyp_power)
     return env
 
 def _train_RL(env, algo_name, variant = None, state_transformation = None, fname = None):
@@ -327,7 +354,7 @@ def main():
             #'visited_native_states': visited_native_states[idx]
             #'avg_backlog_changes': backlog_changes[idx]
         }
-    print (summary)
+    print(summary)
     np.save(FLAGS.outfile, summary)
 
 if __name__ == '__main__':

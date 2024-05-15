@@ -5,8 +5,7 @@ set -e
 
 # 1. setup anaconda environment
 # replace env-name on the right hand side of this line with the name of your conda environment
-ENVNAME=myenv
-#research
+ENVNAME=research
 # if you need the environment directory to be named something other than the environment name, change this line
 ENVDIR=$ENVNAME
 
@@ -27,7 +26,6 @@ sleep 5
 #export C_INCLUDE_PATH="$ENVDIR/include:$C_LIBRARY_PATH"
 pip install stable-baselines3
 WORKING_DIR="$(pwd)"
-rm -rf /home/pavse/.d4rl/
 mkdir d4rl_temp
 export D4RL_DATASET_DIR="$WORKING_DIR/d4rl_temp"
 #pip install git+https://github.com/rail-berkeley/d4rl@master#egg=d4rl
