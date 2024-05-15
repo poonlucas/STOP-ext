@@ -112,7 +112,7 @@ def run_trial(seed,
     if condor:
         if FLAGS.env_name == 'traffic':
             submitFile = 'universe = container\n'
-            submitFile += 'container_image = http://proxy.chtc.wisc.edu/SQUID/pavse/sumo.sif\n'
+            submitFile += 'container_image = http://proxy.chtc.wisc.edu/SQUID/llpoon/sumo.sif\n'
         else:
             submitFile = 'universe = vanilla\n'
         submitFile += 'executable = ' + EXECUTABLE + "\n"
@@ -125,14 +125,14 @@ def run_trial(seed,
         submitFile += 'should_transfer_files = YES\n'
         submitFile += 'when_to_transfer_output = ON_EXIT\n'
 
-        setup_files = 'http://proxy.chtc.wisc.edu/SQUID/pavse/myenv.tar.gz'
+        setup_files = 'http://proxy.chtc.wisc.edu/SQUID/llpoon/research.tar.gz'
         common_main_files = 'run_single_continual.py, policies.py, utils.py, algos, pretrained_policies, cleanrl_algo'
 
         if FLAGS.env_name == 'traffic':
             domains = 'run_traffic.py, sumo'
-            submitFile += 'transfer_input_files = http://proxy.chtc.wisc.edu/SQUID/pavse/sumo.sif, {}, {}, {}\n'.format(setup_files, common_main_files, domains)
+            submitFile += 'transfer_input_files = http://proxy.chtc.wisc.edu/SQUID/llpoon/sumo.sif, {}, {}, {}\n'.format(setup_files, common_main_files, domains)
         else:
-            domains = 'server_allocation.py, gridworld.py, nmodel.py'
+            domains = 'server_allocation.py, gridworld.py, nmodel.py, criss_cross.py'
             submitFile += 'transfer_input_files = {}, {}, {}\n'.format(setup_files, common_main_files, domains)
         submitFile += 'requirements = (has_avx == True)\n'
         submitFile += 'request_cpus = 1\n'
@@ -204,16 +204,19 @@ def main():  # noqa
                     #('STOP-C', 'stab', 'symloge', 3.),
                     #('STOP-4', 'stab', 'symloge', 4.),
                     #('STOP-5', 'stab', 'symloge', 5.),
+                    ('STOP-Q-POW', 'stab-pow', 'symloge', 2.),
+                    ('STOP-Q', 'stab', 'symloge', 2.),
+                    ('STOP-C', 'stab', 'symloge', 3.),
 
                     #('STOP-ID', 'stab', 'id', 3.),
                     #('STOP-SIG', 'stab', 'sigmoid', 3.),
                     #('STOP-SL', 'stab', 'symloge', 3.),
                     #('STOP-SS', 'stab', 'symsqrt', 3.),
 
-                    ('STOP-ID', 'opt', 'id', None),
-                    ('STOP-SIG', 'opt', 'sigmoid', None),
-                    ('STOP-SL', 'opt', 'symloge', None),
-                    ('STOP-SS', 'opt', 'symsqrt', None),
+                    # ('STOP-ID', 'opt', 'id', None),
+                    # ('STOP-SIG', 'opt', 'sigmoid', None),
+                    # ('STOP-SL', 'opt', 'symloge', None),
+                    # ('STOP-SS', 'opt', 'symsqrt', None),
                 ]
 
     rl_combined = [truncated_horizon, lrs, replay_epoch, adam_betas, rl_algos]
