@@ -1,4 +1,6 @@
 import argparse
+import pdb
+
 from numba import jit
 import numpy as np
 import os
@@ -26,7 +28,6 @@ parser = argparse.ArgumentParser()
 # common setup
 parser.add_argument('--outfile', default=None)
 
-parser.add_argument('--exp_name', type=str, required=True)
 parser.add_argument('--env_name', type=str, required=True)
 parser.add_argument('--algo_name', type=str, default='all')
 parser.add_argument('--mdp_num', default=0, type=int)
@@ -41,7 +42,7 @@ parser.add_argument('--model', default=False, type=str2bool)
 
 FLAGS = parser.parse_args()
 
-out_dir = os.path.join(f'heatmaps/{FLAGS.env_name}/{FLAGS.outfile}')
+out_dir = os.path.join('heatmaps', f'{FLAGS.env_name}', f'mdp_{FLAGS.mdp_num}', f'{FLAGS.outfile}')
 os.makedirs(out_dir, exist_ok=True)
 
 
@@ -126,7 +127,8 @@ class SAOptimal:  # Value iteration bounded by state space of 60
             ser_prob = 1.
             for q in range(len(env.qs)):
                 arr_prob *= env.qs[q].get_arrival_prob(0) if arrivals[i][q] else (1 - env.qs[q].get_arrival_prob(0))
-                ser_prob *= env.qs[q].get_service_prob(0) if services[i][q] else (1 - env.qs[q].get_service_prob(0))
+                ser_prob *= (env.qs[q].get_service_prob(0) * env.qs[q].get_connection_prob(0)) if services[i][q] else \
+                    (1 - env.qs[q].get_service_prob(0) * env.qs[q].get_connection_prob(0))
             arrival_probs[tuple(arrivals[i])] = arr_prob
             service_probs[tuple(services[i])] = ser_prob
         combined = [arrivals, services]
@@ -144,6 +146,8 @@ class SAOptimal:  # Value iteration bounded by state space of 60
                     all_probs[combined_out_w_act] = 0
                 all_probs[combined_out_w_act] += (arrival_probs[tuple(arr)] * service_probs[tuple(ser)])
 
+        print(all_probs)
+
         a_1 = []
         a_2 = []
 
@@ -156,21 +160,20 @@ class SAOptimal:  # Value iteration bounded by state space of 60
         self.probs = np.stack((np.array(a_1), np.array(a_1)))
 
         self.Q = np.zeros((self.bound, self.bound, 2))
-        if os.path.isfile(os.path.join('sa/optimal_q',
+        if os.path.isfile(os.path.join('heatmaps', f'{FLAGS.env_name}', f'mdp_{FLAGS.mdp_num}', f'{FLAGS.outfile}', 'optimal_q',
                                        f'q_{self.env.qs[0].get_arrival_prob(0)}_{self.env.qs[1].get_arrival_prob(0)}_'
                                        f'{self.env.qs[0].get_service_prob(0)}_{self.env.qs[1].get_service_prob(0)}'
                                        f'_bound_{self.bound}.npy')):
-            self.Q = np.load(os.path.join('sa/optimal_q',
+            self.Q = np.load(os.path.join('heatmaps', f'{FLAGS.env_name}', f'mdp_{FLAGS.mdp_num}', f'{FLAGS.outfile}', 'optimal_q',
                                           f'q_{self.env.qs[0].get_arrival_prob(0)}_{self.env.qs[1].get_arrival_prob(0)}_'
                                           f'{self.env.qs[0].get_service_prob(0)}_{self.env.qs[1].get_service_prob(0)}'
                                           f'_bound_{self.bound}.npy'))
         else:
             # For numba
-            start = time.time()
             self.Q = opt_value_iteration(self.iterations, self.Q, self.bound, self.gamma, self.probs)
-            end = time.time()
-            print(start - end)
-            np.save(os.path.join('sa/optimal_q',
+            save_dir = os.path.join('heatmaps', f'{FLAGS.env_name}', f'mdp_{FLAGS.mdp_num}', f'{FLAGS.outfile}', 'optimal_q')
+            os.makedirs(save_dir, exist_ok=True)
+            np.save(os.path.join('heatmaps', f'{FLAGS.env_name}', f'mdp_{FLAGS.mdp_num}', f'{FLAGS.outfile}', 'optimal_q',
                                  f'q_{self.env.qs[0].get_arrival_prob(0)}_{self.env.qs[1].get_arrival_prob(0)}_'
                                  f'{self.env.qs[0].get_service_prob(0)}_{self.env.qs[1].get_service_prob(0)}'
                                  f'_bound_{self.bound}'), self.Q)
@@ -290,11 +293,11 @@ class SAPolicy:
         self.probs = np.stack((np.array(a_1), np.array(a_1)))
 
         self.Q = np.zeros((self.bound, self.bound))
-        if os.path.isfile(os.path.join(f'heatmaps/{FLAGS.env_name}/{self.policy}_q',
+        if os.path.isfile(os.path.join('heatmaps', f'{FLAGS.env_name}', f'mdp_{FLAGS.mdp_num}', f'{FLAGS.outfile}', f'{self.policy}_q',
                                        f'q_{self.env.qs[0].get_arrival_prob(0)}_{self.env.qs[1].get_arrival_prob(0)}_'
                                        f'{self.env.qs[0].get_service_prob(0)}_{self.env.qs[1].get_service_prob(0)}'
                                        f'_bound_{self.bound}.npy')):
-            self.Q = np.load(os.path.join(f'heatmaps/{FLAGS.env_name}/{self.policy}_q',
+            self.Q = np.load(os.path.join('heatmaps', f'{FLAGS.env_name}', f'mdp_{FLAGS.mdp_num}', f'{FLAGS.outfile}', f'{self.policy}_q',
                                           f'q_{self.env.qs[0].get_arrival_prob(0)}_{self.env.qs[1].get_arrival_prob(0)}_'
                                           f'{self.env.qs[0].get_service_prob(0)}_{self.env.qs[1].get_service_prob(0)}'
                                           f'_bound_{self.bound}.npy'))
@@ -306,7 +309,7 @@ class SAPolicy:
                                             mus)
             end = time.time()
             print(start - end)
-            np.save(os.path.join(f'heatmaps/{FLAGS.env_name}/{self.policy}_q',
+            np.save(os.path.join('heatmaps', f'{FLAGS.env_name}', f'mdp_{FLAGS.mdp_num}', f'{FLAGS.outfile}', f'{self.policy}_q',
                                  f'q_{self.env.qs[0].get_arrival_prob(0)}_{self.env.qs[1].get_arrival_prob(0)}_'
                                  f'{self.env.qs[0].get_service_prob(0)}_{self.env.qs[1].get_service_prob(0)}'
                                  f'_bound_{self.bound}'), self.Q)
@@ -356,9 +359,9 @@ def main():
     pi = None
     if FLAGS.algo_name == "lyp":
         pi = SALyapunov(env)
-    elif FLAGS.algo_name == "l-pow":
+    elif FLAGS.algo_name == "lyp-pow":
         pi = SALyapunovPow(env)
-    elif FLAGS.algo_name == "vi-opt":
+    elif FLAGS.algo_name == "opt":
         pi = SAOptimal(env)
     elif FLAGS.algo_name == "random" or "lcq" or "mw" or "lscq":
         pi = SAPolicy(env, FLAGS.algo_name)
@@ -368,19 +371,24 @@ def main():
         ma_shape = ma.shape
         X1 = []
         X2 = []
+        X3 = []  # Linear
         Y = []
         for i in range(ma_shape[0]):
             for j in range(ma_shape[1]):
                 X1.append([i ** 2, j ** 2, i, j])
                 X2.append([i ** 2, j ** 2, i * j])
+                X3.append([i, j])
                 Y.append(ma[i, j])
-        X1 = np.asarray(X1)
-        X2 = np.asarray(X2)
+        X1 = np.array(X1)
+        X2 = np.array(X2)
+        X3 = np.array(X3)
         theta1 = np.dot(np.dot(np.linalg.inv(np.dot(X1.T, X1)), X1.T), Y)
         theta2 = np.dot(np.dot(np.linalg.inv(np.dot(X2.T, X2)), X2.T), Y)
+        theta3 = np.dot(np.dot(np.linalg.inv(np.dot(X3.T, X3)), X3.T), Y)
 
         print(f"Option 1: {theta1[0]} q1^2 + {theta1[1]} q2^2 + {theta1[2]} q1 + {theta1[3]} q2")
         print(f"Option 2: {theta2[0]} q1^2 + {theta2[1]} q2^2 + {theta2[2]} q1q2")
+        print(f"Option 3: {theta3[0]} q1 + {theta3[1]} q2")
 
         # model = []
         # for i in range(ma_shape[0]):
@@ -390,22 +398,20 @@ def main():
         #     model.append(temp)
 
     if FLAGS.normalize:
-        mean_ma = np.mean(ma)
-        stdev_ma = np.std(ma)
-        ma = ma - mean_ma
-        ma = ma / stdev_ma
+        min_ma = np.min(ma)
+        max_ma = np.max(ma)
+        ma = (np.array(ma) - min_ma) / (max_ma - min_ma)
 
     if FLAGS.compare is not None:
         c_pi = None
-        if FLAGS.compare == "vi-opt":
+        if FLAGS.compare == "opt":
             c_pi = SAOptimal(env)
         c_ma = c_pi.get_ma()
         if FLAGS.normalize:
-            mean_c_ma = np.mean(c_ma)
-            stdev_c_ma = np.std(c_ma)
-            c_ma = c_ma - mean_c_ma
-            c_ma = c_ma / stdev_c_ma
-        ma = np.array(ma) - np.array(c_ma)
+            min_c_ma = np.min(c_ma)
+            max_c_ma = np.max(c_ma)
+            c_ma = (np.array(c_ma) - min_c_ma) / (max_c_ma - min_c_ma)
+        ma = ma - c_ma
 
     plt.rcParams.update({'font.size': 18})
 
@@ -418,12 +424,14 @@ def main():
     plt.ylabel('Q2 length')
 
     outfile = FLAGS.algo_name
+    if "lyp" in FLAGS.algo_name:
+        outfile = outfile + str(FLAGS.lyp_power)
     if FLAGS.compare is not None:
         outfile = outfile + "-" + FLAGS.compare
     if FLAGS.normalize:
         outfile = outfile + "_normalized"
 
-    plt.savefig(f'heatmaps/{FLAGS.env_name}/{outfile}_heat.jpg')
+    plt.savefig(f'heatmaps/{FLAGS.env_name}/mdp_{FLAGS.mdp_num}/{FLAGS.outfile}/{outfile}_heat.jpg')
     plt.close()
 
     x, y = np.meshgrid(np.arange(ma.shape[1]), np.arange(ma.shape[0]))
@@ -439,10 +447,9 @@ def main():
     ax.set_ylabel('Q2 length', labelpad=20)
     ax.set_zlabel('Value', labelpad=20)
 
-    plt.savefig(f'heatmaps/{FLAGS.env_name}/{outfile}_3dheat.jpg')
+    plt.savefig(f'heatmaps/{FLAGS.env_name}/mdp_{FLAGS.mdp_num}/{FLAGS.outfile}/{outfile}_3dheat.jpg')
 
     plt.show()
-
 
 if __name__ == '__main__':
     main()

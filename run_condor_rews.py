@@ -28,8 +28,6 @@ parser.add_argument('--env_name', type = str, required = True)
 parser.add_argument('--mdp_num', default = 0, type = int, required = True)
 #parser.add_argument('--gamma', default = 0.999, type = float)
 parser.add_argument('--deployed_interaction_steps', default = 250000, type = int)
-parser.add_argument('--pretrained_name', default = None, type = str)
-parser.add_argument('--anneal_lr', default = False, type = str2bool)
 parser.add_argument('--state_bound', default = np.inf, type = float)
 
 parser.add_argument('--training_horizon', default = 10000, type = int)
@@ -126,7 +124,7 @@ def run_trial(seed,
         submitFile += 'when_to_transfer_output = ON_EXIT\n'
 
         setup_files = 'http://proxy.chtc.wisc.edu/SQUID/llpoon/research.tar.gz'
-        common_main_files = 'run_single_continual.py, policies.py, utils.py, algos, pretrained_policies, cleanrl_algo'
+        common_main_files = 'run_single_continual.py, policies.py, utils.py, cleanrl_algo'
 
         if FLAGS.env_name == 'traffic':
             domains = 'run_traffic.py, sumo'
@@ -205,8 +203,8 @@ def main():  # noqa
                     #('STOP-4', 'stab', 'symloge', 4.),
                     #('STOP-5', 'stab', 'symloge', 5.),
                     ('STOP-Q-POW', 'stab-pow', 'symloge', 2.),
-                    ('STOP-Q', 'stab', 'symloge', 2.),
-                    ('STOP-C', 'stab', 'symloge', 3.),
+                    # ('STOP-Q', 'stab', 'symloge', 2.),
+                    # ('STOP-C', 'stab', 'symloge', 3.),
 
                     #('STOP-ID', 'stab', 'id', 3.),
                     #('STOP-SIG', 'stab', 'sigmoid', 3.),
@@ -224,7 +222,7 @@ def main():  # noqa
     
     heur_algos = [
         #('Thresh',),
-        ('MW',) if FLAGS.env_name == 'queue' else ('MWN',),
+        # ('MW',) if FLAGS.env_name == 'queue' else ('MWN',),
     ]
 
     heur_combined = [[0], [0], [0], [0], heur_algos]
