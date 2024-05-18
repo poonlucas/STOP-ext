@@ -69,11 +69,8 @@ def get_cmd(seed,
     
     arguments += ' --mdp_num %d' % FLAGS.mdp_num
     arguments += ' --deployed_interaction_steps %d' % FLAGS.deployed_interaction_steps
-    if FLAGS.pretrained_name:
-        arguments += ' --pretrained_name %s' % FLAGS.pretrained_name
     
     arguments += ' --adam_beta %f' % adam_beta
-    arguments += ' --anneal_lr %s' % FLAGS.anneal_lr
 
     arguments += ' --truncated_horizon %d' % truncated_horizon
     arguments += ' --replay_epochs %d' % replay_epochs
