@@ -30,10 +30,6 @@ parser.add_argument('--mdp_num', default = 0, type = int, required = True)
 parser.add_argument('--deployed_interaction_steps', default = 250000, type = int)
 parser.add_argument('--state_bound', default = np.inf, type = float)
 
-parser.add_argument('--training_horizon', default = 10000, type = int)
-parser.add_argument('--train_interaction_steps', default = 200000, type = int)
-parser.add_argument('--train_and_test', default = False, type = str2bool)
-
 # variables
 parser.add_argument('--num_trials', default = 1, type=int, help='The number of trials to launch.')
 parser.add_argument('--condor', default = False, action='store_true', help='run experiments on condor')
@@ -76,10 +72,6 @@ def get_cmd(seed,
     arguments += ' --replay_epochs %d' % replay_epochs
     arguments += ' --lr %f' % lr
     arguments += ' --state_bound %f' % FLAGS.state_bound
-
-    arguments += ' --training_horizon %d' % FLAGS.training_horizon
-    arguments += ' --train_interaction_steps %d' % FLAGS.train_interaction_steps
-    arguments += ' --train_and_test %s' % FLAGS.train_and_test
 
     if FLAGS.condor:
         cmd = '%s' % (arguments)
