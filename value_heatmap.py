@@ -114,7 +114,7 @@ class SALyapunovPow:
 class SAOptimal:  # Value iteration bounded by state space of 60
     def __init__(self, env):
         self.env = env
-        self.bound = 120  # 60
+        self.bound = 120  # 60, 120
         self.iterations = 3000
         self.gamma = 0.99
 
@@ -160,25 +160,26 @@ class SAOptimal:  # Value iteration bounded by state space of 60
         self.probs = np.stack((np.array(a_1), np.array(a_1)))
 
         self.Q = np.zeros((self.bound, self.bound, 2))
-        if os.path.isfile(os.path.join('heatmaps', f'{FLAGS.env_name}', f'mdp_{FLAGS.mdp_num}', f'{FLAGS.outfile}', 'optimal_q',
+        if os.path.isfile(os.path.join('heatmaps', f'{FLAGS.env_name}', f'mdp_{FLAGS.mdp_num}', 'opt', 'optimal_q',
                                        f'q_{self.env.qs[0].get_arrival_prob(0)}_{self.env.qs[1].get_arrival_prob(0)}_'
                                        f'{self.env.qs[0].get_service_prob(0)}_{self.env.qs[1].get_service_prob(0)}'
                                        f'_bound_{self.bound}.npy')):
-            self.Q = np.load(os.path.join('heatmaps', f'{FLAGS.env_name}', f'mdp_{FLAGS.mdp_num}', f'{FLAGS.outfile}', 'optimal_q',
+            self.Q = np.load(os.path.join('heatmaps', f'{FLAGS.env_name}', f'mdp_{FLAGS.mdp_num}', 'opt', 'optimal_q',
                                           f'q_{self.env.qs[0].get_arrival_prob(0)}_{self.env.qs[1].get_arrival_prob(0)}_'
                                           f'{self.env.qs[0].get_service_prob(0)}_{self.env.qs[1].get_service_prob(0)}'
                                           f'_bound_{self.bound}.npy'))
         else:
             # For numba
             self.Q = opt_value_iteration(self.iterations, self.Q, self.bound, self.gamma, self.probs)
-            save_dir = os.path.join('heatmaps', f'{FLAGS.env_name}', f'mdp_{FLAGS.mdp_num}', f'{FLAGS.outfile}', 'optimal_q')
+            save_dir = os.path.join('heatmaps', f'{FLAGS.env_name}', f'mdp_{FLAGS.mdp_num}', 'opt', 'optimal_q')
             os.makedirs(save_dir, exist_ok=True)
-            np.save(os.path.join('heatmaps', f'{FLAGS.env_name}', f'mdp_{FLAGS.mdp_num}', f'{FLAGS.outfile}', 'optimal_q',
+            np.save(os.path.join('heatmaps', f'{FLAGS.env_name}', f'mdp_{FLAGS.mdp_num}', 'opt', 'optimal_q',
                                  f'q_{self.env.qs[0].get_arrival_prob(0)}_{self.env.qs[1].get_arrival_prob(0)}_'
                                  f'{self.env.qs[0].get_service_prob(0)}_{self.env.qs[1].get_service_prob(0)}'
                                  f'_bound_{self.bound}'), self.Q)
 
     def get_ma(self):
+        # 30
         ma = np.zeros((30, 30))
         for q1 in range(30):
             for q2 in range(30):
@@ -249,7 +250,7 @@ def policy_value_iteration(iterations, Q, bound, gamma, probs, policy, mus):
 class SAPolicy:
     def __init__(self, env, policy):
         self.env = env
-        self.bound = 120  # 60
+        self.bound = 60  # 60
         self.iterations = 3000  # 3000
         self.gamma = 0.99
         self.policy = policy
@@ -369,26 +370,39 @@ def main():
 
     if FLAGS.model:
         ma_shape = ma.shape
-        X1 = []
-        X2 = []
-        X3 = []  # Linear
+        X1 = []  # ax^2 + by^2 + cx + dy
+        X2 = []  # ax^2 + by^2 + cxy
+        X3 = []  # ax^2 + by^2 + 2abxy
+        X4 = []  # ax + by
         Y = []
+        # for i in range(ma_shape[0]):
+        #     for j in range(ma_shape[1]):
+        # # for i in range(2, 6):
+        # #     for j in range(2, 6):
+        #         X1.append([i ** 2, j ** 2, i, j])
+        #         X2.append([i ** 2, j ** 2, i * j])
+        #         X4.append([i, j])
+        #         Y.append(ma[i, j])
+
         for i in range(ma_shape[0]):
-            for j in range(ma_shape[1]):
-                X1.append([i ** 2, j ** 2, i, j])
-                X2.append([i ** 2, j ** 2, i * j])
-                X3.append([i, j])
-                Y.append(ma[i, j])
+            X1.append([i ** 2, i])
+            X2.append([i ** 2])
+            # X4.append([i])
+            Y.append(ma[i, 0])
+
         X1 = np.array(X1)
         X2 = np.array(X2)
-        X3 = np.array(X3)
+        # X4 = np.array(X4)
         theta1 = np.dot(np.dot(np.linalg.inv(np.dot(X1.T, X1)), X1.T), Y)
         theta2 = np.dot(np.dot(np.linalg.inv(np.dot(X2.T, X2)), X2.T), Y)
-        theta3 = np.dot(np.dot(np.linalg.inv(np.dot(X3.T, X3)), X3.T), Y)
+        # theta4 = np.dot(np.dot(np.linalg.inv(np.dot(X4.T, X4)), X4.T), Y)
 
-        print(f"Option 1: {theta1[0]} q1^2 + {theta1[1]} q2^2 + {theta1[2]} q1 + {theta1[3]} q2")
-        print(f"Option 2: {theta2[0]} q1^2 + {theta2[1]} q2^2 + {theta2[2]} q1q2")
-        print(f"Option 3: {theta3[0]} q1 + {theta3[1]} q2")
+        # print(f"Option 1: {theta1[0]} q1^2 + {theta1[1]} q2^2 + {theta1[2]} q1 + {theta1[3]} q2")
+        # print(f"Option 2: {theta2[0]} q1^2 + {theta2[1]} q2^2 + {theta2[2]} q1q2")
+        # print(f"Option 3: {theta4[0]} q1 + {theta4[1]} q2")
+
+        print(f"Option 1: {theta1[0]} q1^2 + {theta1[1]} q1")
+        print(f"Option 2: {theta2[0]} q1^2")
 
         # model = []
         # for i in range(ma_shape[0]):

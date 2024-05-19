@@ -89,9 +89,12 @@ def plot_vs_iterations(data, file_name, plot_params, metric = 'err', interval_ty
 
     fake_patches = [mpatches.Patch(color=color_dict[alg], 
                                    alpha=0.75) for alg in algorithms]
-    legend = plt.legend(fake_patches, algorithms, loc='best', 
-                        fancybox=True, ncol=2,#len(algorithms), 
-                        fontsize='40')#xx-large')
+
+    if plot_params['legend']:
+        legend = plt.legend(fake_patches, algorithms, loc='best',
+                            fancybox=True, ncol=2,  # len(algorithms),
+                            fontsize='40')  # xx-large')
+
     #ax.set_yscale('log')
     ax.set_ylim(plot_params['y_range'])
     #plt.legend(fontsize = 20, loc = 'best')
@@ -111,12 +114,12 @@ def collect_data():
         # 'results_queue_main_mdp_2/env_queue_exp_main_algo_STOP-1.5_seed_553395_mdp-num_2_truncated-horizon_200_lr_0.0003_epochs_10_adam-beta_0.9.npy'
         names = f_name.split('_')
         summary = np.load(f_name, allow_pickle = True).item()
-        truncated_horizon = summary['hp']['truncated_horizon']
-        replay_epochs = summary['hp']['replay_epochs']
-        batch_size = summary['hp']['batch_size']
-        lr = float(summary['hp']['lr'])
+        # truncated_horizon = summary['hp']['truncated_horizon']
+        # replay_epochs = summary['hp']['replay_epochs']
+        # batch_size = summary['hp']['batch_size']
+        # lr = float(summary['hp']['lr'])
         adam_beta = -1#float(summary['hp']['adam_beta'])
-        hp = (truncated_horizon, lr, replay_epochs, batch_size, adam_beta)
+        # hp = (truncated_horizon, lr, replay_epochs, batch_size, adam_beta)
         results = summary['results']
         algos = summary['results'].keys()
         
@@ -168,12 +171,13 @@ def main():
                'legend_loc': 0,
                'legend_cols': 2,
                #'y_range': (90, 1000),
-               'y_range': None,#(10, 20),
+               'y_range': (1.2, 2.6),  # (10, 20) 3.5,
+               #'y_range': None,  #(10, 20),
                'x_range': None,
                'log_scale': False,
-               #'y_label': r'(relative) MSE($\rho(\pi_e)$)',
+                   #'y_label': r'(relative) MSE($\rho(\pi_e)$)',
                'y_label': FLAGS.y_label,
-               #'y_label': '(relative) MSE',
+                   #'y_label': '(relative) MSE',
                'shade_error': True,
                'x_mult': 1,
                'axis_label_pad': 15}

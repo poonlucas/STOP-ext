@@ -1,4 +1,4 @@
-import gym
+import gymnasium as gym
 import numpy as np
 import pdb
 from utils import powerset, symlog, symsqrt, sigmoid, tanh
@@ -90,21 +90,6 @@ class CrissCrossNetwork(gym.Env):
     def _total_queue_length(self, state):
         return np.sum(state)
 
-    def _overall_avg_backlog(self, state):
-        return np.mean(np.abs(state[:self.dim] - self.goal))
-
-    def _avg_backlog(self, state, next_state, weighted=False):
-        lens = np.abs(next_state[:self.dim] - self.goal)
-        if weighted:
-            su = np.sum(lens)
-            if su == 0:
-                su = 1.
-            weights = lens / su
-            met = np.sum(weights * lens)
-        else:
-            met = np.mean(lens)
-        return met
-
     def _backlog_change(self, state, next_state):
         prev_lengths = np.mean(np.abs(state[:self.dim] - self.goal))
         curr_lengths = np.mean(np.abs(next_state[:self.dim] - self.goal))  # Manhatten distance
@@ -178,8 +163,7 @@ class CrissCrossNetwork(gym.Env):
         self.native_state = next_state
         self.state = self.transform_state(self.native_state)
 
-        # backlog = self._overall_avg_backlog(state=self.native_state)
-        backlog = self._total_queue_length(state=self.native_state)
+        backlog = self._total_queue_length(state = self.native_state)
 
         # if based on change, then need updated state to compute reward
         reward = self.reward_function(self.native_prev_state, a, self.native_state)

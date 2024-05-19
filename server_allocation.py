@@ -262,6 +262,30 @@ class SANetwork(gym.Env):
 
         if self.reward_func == 'opt':
             reward = -1 * avg_q_len
+        elif 'stab-pow-piece' in self.reward_func:  # linear, but piecewise cubic after if any queue is 0
+            opt_rew = -avg_q_len
+            if np.abs(self.lyp_power - 1) <= 1e-5:
+                opt_rew = 1. / (avg_q_len + 1)
+            prev = state[:len(self.qs)] - self.goal
+            if 0 in prev:
+                prev_lens = np.power(np.mean(state[:len(self.qs)] - self.goal), 2.5)
+                curr_lens = np.power(np.mean(next_state[:len(self.qs)] - self.goal), 2.5)
+            else:
+                prev_lens = np.power(np.mean(state[:len(self.qs)] - self.goal), self.lyp_power)
+                curr_lens = np.power(np.mean(next_state[:len(self.qs)] - self.goal), self.lyp_power)
+            reward = -1 * (curr_lens - prev_lens) + opt_rew
+        elif 'stab-piece' in self.reward_func:  # linear, but piecewise cubic before if any queue is 0
+            opt_rew = -avg_q_len
+            if np.abs(self.lyp_power - 1) <= 1e-5:
+                opt_rew = 1. / (avg_q_len + 1)
+            prev = state[:len(self.qs)] - self.goal
+            if 0 in prev:
+                prev_lens = np.mean(np.power(state[:len(self.qs)] - self.goal, 2.5))
+                curr_lens = np.mean(np.power(next_state[:len(self.qs)] - self.goal, 2.5))
+            else:
+                prev_lens = np.mean(np.power(state[:len(self.qs)] - self.goal, self.lyp_power))
+                curr_lens = np.mean(np.power(next_state[:len(self.qs)] - self.goal, self.lyp_power))
+            reward = -1 * (curr_lens - prev_lens) + opt_rew
         elif 'stab-pow' in self.reward_func:
             opt_rew = -avg_q_len
             if np.abs(self.lyp_power - 1) <= 1e-5:
