@@ -111,6 +111,22 @@ class SALyapunovPow:
         return self.ma
 
 
+class SALyapunovPiecewise:
+    def __init__(self, env):
+        self.env = env
+        self.bound = 30
+        self.ma = np.zeros((self.bound, self.bound))
+        for i in range(self.bound):
+            for j in range(self.bound):
+                if i == 0:
+                    self.ma[i, j] = -((i + j) / 2) ** 2.5
+                else:
+                    self.ma[i, j] = -((i + j) / 2)
+
+    def get_ma(self):
+        return self.ma
+
+
 class SAOptimal:  # Value iteration bounded by state space of 60
     def __init__(self, env):
         self.env = env
@@ -294,11 +310,13 @@ class SAPolicy:
         self.probs = np.stack((np.array(a_1), np.array(a_1)))
 
         self.Q = np.zeros((self.bound, self.bound))
-        if os.path.isfile(os.path.join('heatmaps', f'{FLAGS.env_name}', f'mdp_{FLAGS.mdp_num}', f'{FLAGS.outfile}', f'{self.policy}_q',
+        if os.path.isfile(os.path.join('heatmaps', f'{FLAGS.env_name}', f'mdp_{FLAGS.mdp_num}', f'{FLAGS.outfile}',
+                                       f'{self.policy}_q',
                                        f'q_{self.env.qs[0].get_arrival_prob(0)}_{self.env.qs[1].get_arrival_prob(0)}_'
                                        f'{self.env.qs[0].get_service_prob(0)}_{self.env.qs[1].get_service_prob(0)}'
                                        f'_bound_{self.bound}.npy')):
-            self.Q = np.load(os.path.join('heatmaps', f'{FLAGS.env_name}', f'mdp_{FLAGS.mdp_num}', f'{FLAGS.outfile}', f'{self.policy}_q',
+            self.Q = np.load(os.path.join('heatmaps', f'{FLAGS.env_name}', f'mdp_{FLAGS.mdp_num}', f'{FLAGS.outfile}',
+                                          f'{self.policy}_q',
                                           f'q_{self.env.qs[0].get_arrival_prob(0)}_{self.env.qs[1].get_arrival_prob(0)}_'
                                           f'{self.env.qs[0].get_service_prob(0)}_{self.env.qs[1].get_service_prob(0)}'
                                           f'_bound_{self.bound}.npy'))
@@ -310,7 +328,8 @@ class SAPolicy:
                                             mus)
             end = time.time()
             print(start - end)
-            np.save(os.path.join('heatmaps', f'{FLAGS.env_name}', f'mdp_{FLAGS.mdp_num}', f'{FLAGS.outfile}', f'{self.policy}_q',
+            np.save(os.path.join('heatmaps', f'{FLAGS.env_name}', f'mdp_{FLAGS.mdp_num}', f'{FLAGS.outfile}',
+                                 f'{self.policy}_q',
                                  f'q_{self.env.qs[0].get_arrival_prob(0)}_{self.env.qs[1].get_arrival_prob(0)}_'
                                  f'{self.env.qs[0].get_service_prob(0)}_{self.env.qs[1].get_service_prob(0)}'
                                  f'_bound_{self.bound}'), self.Q)
@@ -362,6 +381,8 @@ def main():
         pi = SALyapunov(env)
     elif FLAGS.algo_name == "lyp-pow":
         pi = SALyapunovPow(env)
+    elif FLAGS.algo_name == "lyp-piecewise":
+        pi = SALyapunovPiecewise(env)
     elif FLAGS.algo_name == "opt":
         pi = SAOptimal(env)
     elif FLAGS.algo_name == "random" or "lcq" or "mw" or "lscq":
@@ -375,34 +396,32 @@ def main():
         X3 = []  # ax^2 + by^2 + 2abxy
         X4 = []  # ax + by
         Y = []
-        # for i in range(ma_shape[0]):
-        #     for j in range(ma_shape[1]):
-        # # for i in range(2, 6):
-        # #     for j in range(2, 6):
-        #         X1.append([i ** 2, j ** 2, i, j])
-        #         X2.append([i ** 2, j ** 2, i * j])
-        #         X4.append([i, j])
-        #         Y.append(ma[i, j])
+        for i in range(1, ma_shape[0]):
+            for j in range(1, ma_shape[1]):
+                X1.append([i ** 2, j ** 2, i, j])
+                X2.append([i ** 2, j ** 2, i * j])
+                X4.append([i, j])
+                Y.append(ma[i, j])
 
-        for i in range(ma_shape[0]):
-            X1.append([i ** 2, i])
-            X2.append([i ** 2])
-            # X4.append([i])
-            Y.append(ma[i, 0])
+        # for i in range(ma_shape[0]):
+        #     X1.append([i ** 2, i])
+        #     X2.append([i ** 2])
+        #     # X4.append([i])
+        #     Y.append(ma[i, 0])
 
         X1 = np.array(X1)
         X2 = np.array(X2)
-        # X4 = np.array(X4)
+        X4 = np.array(X4)
         theta1 = np.dot(np.dot(np.linalg.inv(np.dot(X1.T, X1)), X1.T), Y)
         theta2 = np.dot(np.dot(np.linalg.inv(np.dot(X2.T, X2)), X2.T), Y)
-        # theta4 = np.dot(np.dot(np.linalg.inv(np.dot(X4.T, X4)), X4.T), Y)
+        theta4 = np.dot(np.dot(np.linalg.inv(np.dot(X4.T, X4)), X4.T), Y)
 
-        # print(f"Option 1: {theta1[0]} q1^2 + {theta1[1]} q2^2 + {theta1[2]} q1 + {theta1[3]} q2")
-        # print(f"Option 2: {theta2[0]} q1^2 + {theta2[1]} q2^2 + {theta2[2]} q1q2")
-        # print(f"Option 3: {theta4[0]} q1 + {theta4[1]} q2")
+        print(f"Option 1: {theta1[0]} q1^2 + {theta1[1]} q2^2 + {theta1[2]} q1 + {theta1[3]} q2")
+        print(f"Option 2: {theta2[0]} q1^2 + {theta2[1]} q2^2 + {theta2[2]} q1q2")
+        print(f"Option 3: {theta4[0]} q1 + {theta4[1]} q2")
 
-        print(f"Option 1: {theta1[0]} q1^2 + {theta1[1]} q1")
-        print(f"Option 2: {theta2[0]} q1^2")
+        # print(f"Option 1: {theta1[0]} q1^2 + {theta1[1]} q1")
+        # print(f"Option 2: {theta2[0]} q1^2")
 
         # model = []
         # for i in range(ma_shape[0]):
@@ -415,6 +434,7 @@ def main():
         min_ma = np.min(ma)
         max_ma = np.max(ma)
         ma = (np.array(ma) - min_ma) / (max_ma - min_ma)
+        np.save(os.path.join('heatmaps', f'{FLAGS.env_name}', f'mdp_{FLAGS.mdp_num}', f'{FLAGS.outfile}', f'{FLAGS.algo_name}'), ma)
 
     if FLAGS.compare is not None:
         c_pi = None
@@ -425,7 +445,7 @@ def main():
             min_c_ma = np.min(c_ma)
             max_c_ma = np.max(c_ma)
             c_ma = (np.array(c_ma) - min_c_ma) / (max_c_ma - min_c_ma)
-        ma = ma - c_ma
+        ma = np.abs(ma - c_ma)
 
     plt.rcParams.update({'font.size': 18})
 
@@ -445,7 +465,7 @@ def main():
     if FLAGS.normalize:
         outfile = outfile + "_normalized"
 
-    plt.savefig(f'heatmaps/{FLAGS.env_name}/mdp_{FLAGS.mdp_num}/{FLAGS.outfile}/{outfile}_heat.jpg')
+    plt.savefig(f'heatmaps/{FLAGS.env_name}/mdp_{FLAGS.mdp_num}/{FLAGS.outfile}/{outfile}_heat.jpg', bbox_inches='tight')
     plt.close()
 
     x, y = np.meshgrid(np.arange(ma.shape[1]), np.arange(ma.shape[0]))
@@ -461,9 +481,10 @@ def main():
     ax.set_ylabel('Q2 length', labelpad=20)
     ax.set_zlabel('Value', labelpad=20)
 
-    plt.savefig(f'heatmaps/{FLAGS.env_name}/mdp_{FLAGS.mdp_num}/{FLAGS.outfile}/{outfile}_3dheat.jpg')
+    plt.savefig(f'heatmaps/{FLAGS.env_name}/mdp_{FLAGS.mdp_num}/{FLAGS.outfile}/{outfile}_3dheat.jpg', bbox_inches='tight')
 
     plt.show()
+
 
 if __name__ == '__main__':
     main()

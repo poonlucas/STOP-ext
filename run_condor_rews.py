@@ -119,7 +119,7 @@ def run_trial(seed,
             domains = 'run_traffic.py, sumo'
             submitFile += 'transfer_input_files = http://proxy.chtc.wisc.edu/SQUID/llpoon/sumo.sif, {}, {}, {}\n'.format(setup_files, common_main_files, domains)
         else:
-            domains = 'server_allocation.py, nmodel.py, criss_cross.py, env_configs.py'
+            domains = 'server_allocation.py, nmodel.py, criss_cross.py, env_configs.py, opt_value_function.npy'
             submitFile += 'transfer_input_files = {}, {}, {}\n'.format(setup_files, common_main_files, domains)
         submitFile += 'requirements = (has_avx == True)\n'
         submitFile += 'request_cpus = 1\n'
@@ -185,8 +185,9 @@ def main():  # noqa
     rl_algos = [
                     #('PPO', 'opt', 'id', None),
                     ('STOP-L', 'stab', 'symloge', 1.),
-                    ('STOP-L-AFTER', 'stab-pow-piece', 'symloge', 1.),
-                    ('STOP-L-BEFORE', 'stab-piece', 'symloge', 1.),
+                    ('STOP-OPT', 'stab-opt', 'symloge', 1.),
+                    # ('STOP-L-AFTER', 'stab-pow-piece', 'symloge', 1.),
+                    # ('STOP-L-BEFORE', 'stab-piece', 'symloge', 1.),
                     # ('STOP-1.5', 'stab', 'symloge', 1.5),
                     # ('STOP-Q', 'stab', 'symloge', 2.),
                     ('STOP-2.5', 'stab', 'symloge', 2.5),
