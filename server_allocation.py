@@ -263,7 +263,21 @@ class SANetwork(gym.Env):
         if self.reward_func == 'opt':
             reward = -1 * avg_q_len
         elif 'stab-opt' in self.reward_func:  # Sanity check, using optimal value function as lyapunov
-            opt_ma = -1 * (1 - np.load('opt_value_function.npy'))
+            opt_ma = -1 * (1 - np.load('opt_value_function_120.npy'))
+            opt_rew = -avg_q_len
+            if np.abs(self.lyp_power - 1) <= 1e-5:
+                opt_rew = 1. / (avg_q_len + 1)
+            prev = state[:len(self.qs)] - self.goal
+            curr = next_state[:len(self.qs)] - self.goal
+            if prev[0] < 30 and prev[1] < 30 and curr[0] < 30 and curr[1] < 30:
+                prev_lens = opt_ma[int(prev[0]), int(prev[1])]
+                curr_lens = opt_ma[int(curr[0]), int(curr[1])]
+            else:
+                prev_lens = np.mean(prev)
+                curr_lens = np.mean(curr)
+            reward = -1 * (curr_lens - prev_lens) + opt_rew
+        elif 'stab-opt-2' in self.reward_func:  # Sanity check, using optimal value function as lyapunov
+            opt_ma = -1 * (1 - np.load('opt_value_function_300.npy'))
             opt_rew = -avg_q_len
             if np.abs(self.lyp_power - 1) <= 1e-5:
                 opt_rew = 1. / (avg_q_len + 1)

@@ -130,7 +130,7 @@ class SALyapunovPiecewise:
 class SAOptimal:  # Value iteration bounded by state space of 60
     def __init__(self, env):
         self.env = env
-        self.bound = 120  # 60, 120
+        self.bound = 300  # 60, 120
         self.iterations = 3000
         self.gamma = 0.99
 
@@ -434,7 +434,7 @@ def main():
         min_ma = np.min(ma)
         max_ma = np.max(ma)
         ma = (np.array(ma) - min_ma) / (max_ma - min_ma)
-        np.save(os.path.join('heatmaps', f'{FLAGS.env_name}', f'mdp_{FLAGS.mdp_num}', f'{FLAGS.outfile}', f'{FLAGS.algo_name}'), ma)
+        np.save(os.path.join('heatmaps', f'{FLAGS.env_name}', f'mdp_{FLAGS.mdp_num}', f'{FLAGS.outfile}', f'{FLAGS.algo_name}_300'), ma)
 
     if FLAGS.compare is not None:
         c_pi = None
