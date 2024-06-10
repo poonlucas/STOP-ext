@@ -186,6 +186,7 @@ def main():  # noqa
                     #('PPO', 'opt', 'id', None),
                     ('STOP-L', 'stab', 'symloge', 1.),
                     ('STOP-OPT', 'stab-opt', 'symloge', 1.),
+                    ('STOP-OPT', 'stab-opt', 'symloge', 1.),
                     # ('STOP-L-AFTER', 'stab-pow-piece', 'symloge', 1.),
                     # ('STOP-L-BEFORE', 'stab-piece', 'symloge', 1.),
                     # ('STOP-1.5', 'stab', 'symloge', 1.5),
