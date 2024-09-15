@@ -109,6 +109,7 @@ class ARPPO:
 
         print_freq = self.round_to_multiple(10_000, self.batch_size)
         backlog = []
+        visited_native_states = []
         time = []
 
         # setup
@@ -155,6 +156,7 @@ class ARPPO:
                 rewards[step] = reward#torch.tensor(reward).view(-1)
                 next_obs, next_done = torch.Tensor(next_obs), torch.Tensor([next_done])
                 backlog.append(infos['backlog'])
+                visited_native_states.append(infos['native_state'])
                 time.append(infos['time'])
 
             rew_running_mean = (1 - rew_tau) * rew_running_mean + rew_tau * torch.mean(rewards, axis = 0)
@@ -253,6 +255,7 @@ class ARPPO:
         
         self.time = time
         self.backlog = backlog
+        self.visited_native_states = visited_native_states
 
     def round_to_multiple(self, number, multiple):
         quotient = number / multiple
@@ -263,6 +266,7 @@ class ARPPO:
     def get_stats(self):
         stats = {
             'backlog': self.backlog,
+            'visited_native_states': self.visited_native_states,
             'time': self.time
         }
         return stats

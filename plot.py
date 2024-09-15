@@ -171,7 +171,7 @@ def main():
                'legend_loc': 0,
                'legend_cols': 2,
                #'y_range': (90, 1000),
-               'y_range': (1.2, 2.6),  # (10, 20) 3.5,
+               'y_range': (1.2, 2.6),  # (10, 20) 3.5, 2.6
                #'y_range': None,  #(10, 20),
                'x_range': None,
                'log_scale': False,

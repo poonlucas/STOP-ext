@@ -165,6 +165,7 @@ def run_experiment_algo(env, algo_name):
     visited_native_states = None
     vis_ns = []
     pi_stats = None
+    next_native_states = None
     if algo_name == 'PPO' or 'STOP' in algo_name:
         variant = 'zhang'
         rl_res = []
@@ -176,7 +177,8 @@ def run_experiment_algo(env, algo_name):
         rl_bl = pi_stats['backlog']
         rl_bl = rl_bl[:int(
             FLAGS.deployed_interaction_steps / FLAGS.deployed_interaction_step_skip)]  # remove extra fluff that sb3 has
-        visited_native_states = []  # pi_stats['visited_native_states']
+        print(pi_stats)
+        visited_native_states = pi_stats['visited_native_states']  # pi_stats['visited_native_states']
         vis_ns.append(visited_native_states)
         rl_res.append(rl_bl)
         # utils.plot_heatmap(pi, '{}_{}'.format(fname, 'zhang-' + t), transformation = t)
@@ -210,6 +212,9 @@ def run_experiment_algo(env, algo_name):
         bl = paths[0]['avg_backlog']
         bl = bl[:FLAGS.deployed_interaction_steps:FLAGS.deployed_interaction_step_skip]
         backlogs = [bl]
+        ns = paths[0]['native_state']
+        ns = ns[:FLAGS.deployed_interaction_steps:FLAGS.deployed_interaction_step_skip]
+        vis_ns = [ns]
     return backlogs, vis_ns, pi_stats
 
 
@@ -242,7 +247,7 @@ def main():
             'avg_backlog': avg_backlogs[idx],
             # 'unstable_adv_mean': pi_stats['unstable_adv_mean'] if pi_stats else 0,
             # 'unstable_frac': pi_stats['unstable_frac'] if pi_stats else 0
-            # 'visited_native_states': visited_native_states[idx]
+            'visited_native_states': visited_native_states[idx]
             # 'avg_backlog_changes': backlog_changes[idx]
         }
     print(summary)

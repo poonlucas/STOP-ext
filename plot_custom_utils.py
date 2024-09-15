@@ -66,6 +66,8 @@ def compute_stats(method, errors, plotting_stat = 'abs', print_log = False):
 def get_student_interval(data, z_score = 1.96):
     algorithms = sorted(list(data.keys()))
 
+    print(data)
+
     means = {}
     ints = {}
     for algo in algorithms:

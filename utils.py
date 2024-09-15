@@ -33,6 +33,7 @@ def collect_data(env, policy, num_trajectory, truncated_horizon):
         path['rews'] = []
         path['avg_backlog'] = []
         path['avg_backlog_change'] = []
+        path['native_state'] = []
         state, _ = env.reset()
         sasr = []
         for i_t in range(truncated_horizon):
@@ -43,6 +44,7 @@ def collect_data(env, policy, num_trajectory, truncated_horizon):
             path['rews'].append(reward)
             path['nobs'].append(next_state)
             path['avg_backlog'].append(info['backlog'])
+            path['native_state'].append(info['native_state'])
             #path['avg_backlog_change'].append(info['backlog_change'])
             #sasr.append((state, action, next_state, reward))
             total_reward += reward

@@ -184,14 +184,10 @@ def main():  # noqa
     # (algo name, reward_func, state_transformation, normalize)
     rl_algos = [
                     #('PPO', 'opt', 'id', None),
-                    ('STOP-L', 'stab', 'symloge', 1.),
-                    ('STOP-OPT', 'stab-opt', 'symloge', 1.),
-                    ('STOP-OPT', 'stab-opt', 'symloge', 1.),
-                    # ('STOP-L-AFTER', 'stab-pow-piece', 'symloge', 1.),
-                    # ('STOP-L-BEFORE', 'stab-piece', 'symloge', 1.),
+                    # ('STOP-L', 'stab', 'symloge', 1.),
                     # ('STOP-1.5', 'stab', 'symloge', 1.5),
-                    # ('STOP-Q', 'stab', 'symloge', 2.),
-                    ('STOP-2.5', 'stab', 'symloge', 2.5),
+                    ('STOP-Q', 'stab', 'sigmoid', 2.),
+                    # ('STOP-2.5', 'stab', 'symloge', 2.5),
                     # ('STOP-C', 'stab', 'symloge', 3.),
                     #('STOP-4', 'stab', 'symloge', 4.),
                     #('STOP-5', 'stab', 'symloge', 5.),
@@ -213,6 +209,8 @@ def main():  # noqa
     heur_algos = [
         #('Thresh',),
         # ('MW',) if FLAGS.env_name == 'queue' else ('MWN',),
+        ('MW'),
+        ('LSCQ'),
     ]
 
     heur_combined = [[0], [0], [0], [0], heur_algos]
