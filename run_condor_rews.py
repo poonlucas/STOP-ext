@@ -209,8 +209,8 @@ def main():  # noqa
     heur_algos = [
         #('Thresh',),
         # ('MW',) if FLAGS.env_name == 'queue' else ('MWN',),
-        ('MW'),
-        ('LSCQ'),
+        ('MW',),
+        ('LSCQ',),
     ]
 
     heur_combined = [[0], [0], [0], [0], heur_algos]
