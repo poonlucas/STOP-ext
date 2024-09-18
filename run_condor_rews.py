@@ -119,11 +119,11 @@ def run_trial(seed,
             domains = 'run_traffic.py, sumo'
             submitFile += 'transfer_input_files = http://proxy.chtc.wisc.edu/SQUID/llpoon/sumo.sif, {}, {}, {}\n'.format(setup_files, common_main_files, domains)
         else:
-            domains = 'server_allocation.py, nmodel.py, criss_cross.py, env_configs.py, opt_value_function_120.npy, opt_value_function_300.npy'
+            domains = 'server_allocation.py, nmodel.py, criss_cross.py, env_configs.py'
             submitFile += 'transfer_input_files = {}, {}, {}\n'.format(setup_files, common_main_files, domains)
         submitFile += 'requirements = (has_avx == True)\n'
         submitFile += 'request_cpus = 1\n'
-        submitFile += 'request_memory = 7GB\n'
+        submitFile += 'request_memory = 20GB\n'
         submitFile += 'request_disk = 8GB\n'
         submitFile += 'queue'
 
