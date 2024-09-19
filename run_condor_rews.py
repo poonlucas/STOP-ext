@@ -209,16 +209,20 @@ def main():  # noqa
     heur_algos = [
         #('Thresh',),
         # ('MW',) if FLAGS.env_name == 'queue' else ('MWN',),
-        ('MW',),
-        ('LSCQ',),
+        #('MW',),
+        #('LSCQ',),
+        ('CCBP',),
+        ('CCMW',),
+        ('CCP1',),
+        ('CCP3',),
     ]
 
     heur_combined = [[0], [0], [0], [0], heur_algos]
     heur_combined = list(itertools.product(*heur_combined))
 
     #all_combined = heur_combined
-    all_combined = rl_combined
-    #all_combined = rl_combined + heur_combined
+    #all_combined = rl_combined
+    all_combined = rl_combined + heur_combined
 
     for e in all_combined:
         th, lr, rep_epoch, adam_beta, algo_info = e

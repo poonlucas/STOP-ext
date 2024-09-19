@@ -11,7 +11,8 @@ import copy
 import torch
 
 from policies import LQ, LSR, LCQ, LSCQ, MaxWeight, Random, \
-    LASQ, LSQ, Threshold, LSQNModel, MWNModel, LQNModel, CleanRLPolicy
+    LASQ, LSQ, Threshold, LSQNModel, MWNModel, LQNModel, CleanRLPolicy, \
+    CCMaxWeight, CCPriority1, CCPriority3, CCBackPressure
 from server_allocation import SAQueue, SANetwork
 from nmodel import NModelNetwork
 from criss_cross import CrissCrossNetwork
@@ -208,6 +209,14 @@ def run_experiment_algo(env, algo_name):
             pi = LSQNModel(env)
         elif algo_name == 'LQN':
             pi = LQNModel(env)
+        elif algo_name == 'CCMW':
+            pi = CCMaxWeight(env)
+        elif algo_name == 'CCP1':
+            pi = CCPriority1(env)
+        elif algo_name == 'CCP3':
+            pi = CCPriority3(env)
+        elif algo_name == 'CCBP':
+            pi = CCBackPressure
         paths, _ = utils.collect_data(env, pi, 1, FLAGS.deployed_interaction_steps)
         bl = paths[0]['avg_backlog']
         bl = bl[:FLAGS.deployed_interaction_steps:FLAGS.deployed_interaction_step_skip]

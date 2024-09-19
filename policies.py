@@ -252,6 +252,76 @@ class LQNModel:
                 a = q_idx
         return a
 
+class CCMaxWeight:
+    def __init__(self, env):
+        self.env = env
+
+    def __call__(self, obs, t=None):
+        return self._get_action(obs, t)
+
+    def _get_action(self, s, t):
+        if s[0] * self.env.mus[0] > s[2] * self.env.mus[2]:
+            return [1, 1]
+        elif s[0] * self.env.mus[0] < s[2] * self.env.mus[2]:
+            return [2, 1]
+        else:
+            if np.random.random() >= 0.5:
+                return [1, 1]  # class 1, class 2
+            return [2, 1]
+
+class CCPriority1:  # Class 1 if Buffer 1 is not empty, otherwise Class 3
+    def __init__(self, env):
+        self.env = env
+
+    def __call__(self, obs, t=None):
+        return self._get_action(obs, t)
+
+    def _get_action(self, s, t):
+        a = [2, 1]  # class 3, class 2
+        if s[0] > 0:
+            a = [1, 1]  # class 1, class 2
+        return np.asarray(a)
+
+
+class CCPriority3:  # Class 1 if Buffer 1 is not empty, otherwise Class 3
+    def __init__(self, env):
+        self.env = env
+
+    def __call__(self, obs, t=None):
+        return self._get_action(obs, t)
+
+    def _get_action(self, s, t):
+        a = [1, 1]  # class 1, class 2
+        if s[2] > 0:
+            a = [2, 1]  # class 3, class 2
+        return np.asarray(a)
+
+
+class CCBackPressure:  # Back Pressure
+    def __init__(self, env):
+        self.env = env
+
+    def __call__(self, obs, t=None):
+        return self._get_action(obs, t)
+
+    def _get_action(self, s, t):
+        mus = self.env.mus
+        # mu1(z1-z2) > mu3z3
+        if mus[0] * (s[0] - s[1]) > mus[2] * s[2]:
+            return [1, 1]  # class 1
+        if mus[0] * (s[0] - s[1]) < mus[2] * s[2] and s[2] > 0:
+            return [2, 1]  # class 3
+        if mus[0] * (s[0] - s[1]) == mus[2] * s[2] and mus[2] * s[2] > 0:
+            if np.random.random() >= 0.5:
+                return [2, 1]
+            return [1, 1]
+        if s[0] < s[1] and s[2] == 0:
+            return [0, 0]
+        if s[0] == s[1] and s[1] > 0 and s[2] == 0:
+            if np.random.random() >= 0.5:
+                return [1, 1]
+        return [0, 0]
+
 class CleanRLPolicy:
     def __init__(self, env,
             num_minibatches = 4,
