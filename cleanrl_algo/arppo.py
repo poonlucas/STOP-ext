@@ -12,13 +12,15 @@ import torch.optim as optim
 from torch.distributions.categorical import Categorical
 from utils import plot_heatmap
 
+
 def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
     torch.nn.init.orthogonal_(layer.weight, std)
     torch.nn.init.constant_(layer.bias, bias_const)
     return layer
 
+
 class Agent(nn.Module):
-    def __init__(self, env, use_action_mask = False):
+    def __init__(self, env, use_action_mask=False):
         super().__init__()
         self.critic = nn.Sequential(
             layer_init(nn.Linear(np.array(env.observation_space.shape).prod(), 64)),
@@ -27,12 +29,16 @@ class Agent(nn.Module):
             nn.Tanh(),
             layer_init(nn.Linear(64, 1), std=1.0),
         )
+        if isinstance(env.action_space, gym.spaces.Discrete):
+            self.action_n = env.action_space.n
+        elif isinstance(env.action_space, gym.spaces.MultiDiscrete):
+            self.action_n = env.action_space.nvec.sum()
         self.actor = nn.Sequential(
             layer_init(nn.Linear(np.array(env.observation_space.shape).prod(), 64)),
             nn.Tanh(),
             layer_init(nn.Linear(64, 64)),
             nn.Tanh(),
-            layer_init(nn.Linear(64, env.action_space.n), std=0.01),
+            layer_init(nn.Linear(64, self.action_n), std=0.01),
         )
         self.env = env
         self.use_action_mask = use_action_mask
@@ -44,48 +50,63 @@ class Agent(nn.Module):
         if x.ndim == 1:
             x = x.view(1, x.shape[0])
         logits = self.actor(x)
-        if self.use_action_mask:
-            act_mask = torch.Tensor(self.env.mask_extractor(x.numpy()))
-            # apply mask
-            logits = logits.masked_fill(act_mask == 1, value = -1e8)
 
-        probs = Categorical(logits=logits)
-        prob_dist = probs.probs
-        if action is None:
-            action = probs.sample()
-            if action.ndim == 1:
-                action = action[0]
-                prob_dist = prob_dist[0]
-        return action, probs.log_prob(action), probs.entropy(), self.critic(x), prob_dist
+        if isinstance(self.env.action_space, gym.spaces.Discrete):
+            if self.use_action_mask:
+                act_mask = torch.Tensor(self.env.mask_extractor(x.numpy()))
+                # apply mask
+                logits = logits.masked_fill(act_mask == 1, value=-1e8)
+            probs = Categorical(logits=logits)
+            prob_dist = probs.probs
+            if action is None:
+                action = probs.sample()
+                if action.ndim == 1:
+                    action = action[0]
+                    prob_dist = prob_dist[0]
+            logprob = probs.log_prob(action)
+            entropy = probs.entropy()
+
+        elif isinstance(self.env.action_space, gym.spaces.MultiDiscrete):
+            split_logits = torch.split(logits, self.env.action_space.nvec.tolist(), dim=1)
+            multi_categoricals = [Categorical(logits = logits) for logits in split_logits]
+            prob_dist = None  # TODO: Probability of all combinations of action 1 and 2
+            if action is None:
+                action = torch.stack([categorical.sample() for categorical in multi_categoricals]).T
+            logprob = torch.stack([categorical.log_prob(a) for a, categorical in zip(action, multi_categoricals)]).sum(0)
+            entropy = torch.stack([categorical.entropy() for categorical in multi_categoricals]).sum(0)
+            pdb.set_trace()
+
+        return action, logprob, entropy, self.critic(x), prob_dist
+
 
 class ARPPO:
     def __init__(self, env,
-                num_envs = 1,
-                num_minibatches = 4,
-                num_steps = 256,
-                learning_rate = 3e-4,
-                anneal_lr = False,
-                update_epochs = 10,
-                clip_coef = 0.2,
-                clip_range_vf = None,
-                clip_vloss = False,
-                ent_coef = 0.0, 
-                vf_coef = 0.5,
-                max_grad_norm = 0.5,
-                target_kl = None,
-                variant = 'zhang',
-                gamma = 0.99,
-                gae_lambda = 0.95,
-                norm_adv = True,
-                use_action_mask = False,
-                adam_beta = 0.9):
+                 num_envs=1,
+                 num_minibatches=4,
+                 num_steps=256,
+                 learning_rate=3e-4,
+                 anneal_lr=False,
+                 update_epochs=10,
+                 clip_coef=0.2,
+                 clip_range_vf=None,
+                 clip_vloss=False,
+                 ent_coef=0.0,
+                 vf_coef=0.5,
+                 max_grad_norm=0.5,
+                 target_kl=None,
+                 variant='zhang',
+                 gamma=0.99,
+                 gae_lambda=0.95,
+                 norm_adv=True,
+                 use_action_mask=False,
+                 adam_beta=0.9):
 
         self.env = env
-        self.agent = Agent(env, use_action_mask = use_action_mask)
+        self.agent = Agent(env, use_action_mask=use_action_mask)
         self.learning_rate = learning_rate
-        self.optimizer = optim.Adam(self.agent.parameters(),\
-            lr=learning_rate, eps = 1e-8,\
-            betas = (adam_beta, adam_beta))
+        self.optimizer = optim.Adam(self.agent.parameters(), \
+                                    lr=learning_rate, eps=1e-8, \
+                                    betas=(adam_beta, adam_beta))
         self.anneal_lr = anneal_lr
         self.num_steps = num_steps
         self.batch_size = num_steps
@@ -105,7 +126,7 @@ class ARPPO:
         self.gamma = gamma
         self.gae_lambda = gae_lambda
 
-    def train(self, total_timesteps = 100_000):
+    def train(self, total_timesteps=100_000):
 
         print_freq = self.round_to_multiple(10_000, self.batch_size)
         backlog = []
@@ -129,8 +150,8 @@ class ARPPO:
         next_done = torch.zeros(self.num_envs)
         rew_running_mean = torch.zeros(self.num_envs)
         rew_tau = 1.
-        #rew_tau = nn.Parameter(torch.tensor(0.), requires_grad = True)
-        #rew_tau_optimizer = torch.optim.Adam([rew_tau], lr = 1e-4)
+        # rew_tau = nn.Parameter(torch.tensor(0.), requires_grad = True)
+        # rew_tau_optimizer = torch.optim.Adam([rew_tau], lr = 1e-4)
 
         for iteration in range(1, self.num_iterations + 1):
             # Annealing the rate if instructed to do so.
@@ -153,13 +174,13 @@ class ARPPO:
                 # TRY NOT TO MODIFY: execute the game and log data.
                 next_obs, reward, terminations, truncations, infos = self.env.step(action.cpu().numpy())
                 next_done = np.logical_or(terminations, truncations)
-                rewards[step] = reward#torch.tensor(reward).view(-1)
+                rewards[step] = reward  # torch.tensor(reward).view(-1)
                 next_obs, next_done = torch.Tensor(next_obs), torch.Tensor([next_done])
                 backlog.append(infos['backlog'])
                 visited_native_states.append(infos['native_state'])
                 time.append(infos['time'])
 
-            rew_running_mean = (1 - rew_tau) * rew_running_mean + rew_tau * torch.mean(rewards, axis = 0)
+            rew_running_mean = (1 - rew_tau) * rew_running_mean + rew_tau * torch.mean(rewards, axis=0)
             mean_rew = rew_running_mean
             # bootstrap value if not done
             with torch.no_grad():
@@ -201,7 +222,8 @@ class ARPPO:
                     end = start + self.minibatch_size
                     mb_inds = b_inds[start:end]
 
-                    _, newlogprob, entropy, newvalue, _ = self.agent.get_action_and_value(b_obs[mb_inds], b_actions.long()[mb_inds])
+                    _, newlogprob, entropy, newvalue, _ = self.agent.get_action_and_value(b_obs[mb_inds],
+                                                                                          b_actions.long()[mb_inds])
                     logratio = newlogprob - b_logprobs[mb_inds]
                     ratio = logratio.exp()
 
@@ -213,9 +235,8 @@ class ARPPO:
 
                     mb_advantages = b_advantages[mb_inds]
                     if self.norm_adv:
-                        #mb_advantages = (mb_advantages - mb_advantages.mean()) / (mb_advantages.std() + 1e-8)
+                        # mb_advantages = (mb_advantages - mb_advantages.mean()) / (mb_advantages.std() + 1e-8)
                         mb_advantages = (mb_advantages) / (mb_advantages.std() + 1e-8)
-
 
                     # Policy loss
                     pg_loss1 = -mb_advantages * ratio
@@ -252,7 +273,7 @@ class ARPPO:
                 denom = np.arange(1, len(backlog) + 1)
                 avg_backlog = np.divide(np.cumsum(backlog), denom)
                 print(avg_backlog)
-        
+
         self.time = time
         self.backlog = backlog
         self.visited_native_states = visited_native_states
@@ -262,7 +283,7 @@ class ARPPO:
         rounded_quotient = round(quotient)
         rounded_number = rounded_quotient * multiple
         return rounded_number
-    
+
     def get_stats(self):
         stats = {
             'backlog': self.backlog,
