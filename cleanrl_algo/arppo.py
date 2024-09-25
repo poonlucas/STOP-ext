@@ -74,7 +74,6 @@ class Agent(nn.Module):
                 action = torch.stack([categorical.sample() for categorical in multi_categoricals]).T
             logprob = torch.stack([categorical.log_prob(a) for a, categorical in zip(action, multi_categoricals)]).sum(0)
             entropy = torch.stack([categorical.entropy() for categorical in multi_categoricals]).sum(0)
-            pdb.set_trace()
 
         return action, logprob, entropy, self.critic(x), prob_dist
 

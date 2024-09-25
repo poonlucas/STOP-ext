@@ -187,8 +187,8 @@ def main():  # noqa
                     # ('STOP-L', 'stab', 'symloge', 1.),
                     # ('STOP-1.5', 'stab', 'symloge', 1.5),
                     ('STOP-Q', 'stab', 'sigmoid', 2.),
-                    # ('STOP-2.5', 'stab', 'symloge', 2.5),
-                    # ('STOP-C', 'stab', 'symloge', 3.),
+                    ('STOP-2.5', 'stab', 'sigmoid', 2.5),
+                    ('STOP-C', 'stab', 'sigmoid', 3.),
                     #('STOP-4', 'stab', 'symloge', 4.),
                     #('STOP-5', 'stab', 'symloge', 5.),
 
@@ -211,7 +211,6 @@ def main():  # noqa
         # ('MW',) if FLAGS.env_name == 'queue' else ('MWN',),
         #('MW',),
         #('LSCQ',),
-        ('CCBP',),
         ('CCMW',),
         ('CCP1',),
         ('CCP3',),
