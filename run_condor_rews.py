@@ -112,7 +112,7 @@ def run_trial(seed,
         submitFile += 'should_transfer_files = YES\n'
         submitFile += 'when_to_transfer_output = ON_EXIT\n'
 
-        setup_files = 'http://proxy.chtc.wisc.edu/SQUID/llpoon/queueing.tar.gz'
+        setup_files = 'http://proxy.chtc.wisc.edu/SQUID/llpoon/research.tar.gz'
         common_main_files = 'run_single_continual.py, policies.py, utils.py, cleanrl_algo'
 
         if FLAGS.env_name == 'traffic':
