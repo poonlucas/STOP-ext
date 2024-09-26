@@ -194,7 +194,7 @@ def run_experiment_algo(env, algo_name):
             or algo_name == 'LQN' \
             or algo_name == 'CCMW' \
             or algo_name == 'CCP1' \
-            or algo_name == 'CCP2' \
+            or algo_name == 'CCP3' \
             or algo_name == 'CCBP':
         env.set_horizon(-1)
         if algo_name == 'LCQ':
