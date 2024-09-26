@@ -242,6 +242,7 @@ def main():
     algos = [algo_name]
     backlogs, visited_native_states, pi_stats = run_experiment_algo(env, algo_name)
 
+    pdb.set_trace()
     avg_backlogs = [np.divide(np.cumsum(backlog), denom) for backlog in backlogs]
     # avg_backlogs = [backlog for backlog in backlogs]
 

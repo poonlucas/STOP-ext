@@ -129,6 +129,11 @@ class ARPPO:
 
         print_freq = self.round_to_multiple(10_000, self.batch_size)
         backlog = []
+        value_losses = []
+        policy_losses = []
+        entropy_losses = []
+        old_approx_kls = []
+        approx_kls = []
         visited_native_states = []
         time = []
 
@@ -273,8 +278,19 @@ class ARPPO:
                 avg_backlog = np.divide(np.cumsum(backlog), denom)
                 print(avg_backlog)
 
+            value_losses.append(v_loss.item())
+            policy_losses.append(pg_loss.item())
+            entropy_losses.append(entropy_loss.item())
+            old_approx_kls.append(old_approx_kl.item())
+            approx_kls.append(approx_kl.item())
+
         self.time = time
         self.backlog = backlog
+        self.value_losses = value_losses
+        self.policy_losses = policy_losses
+        self.entropy_losses = entropy_losses
+        self.old_approx_kls = old_approx_kls
+        self.approx_kls = approx_kls
         self.visited_native_states = visited_native_states
 
     def round_to_multiple(self, number, multiple):
@@ -286,6 +302,11 @@ class ARPPO:
     def get_stats(self):
         stats = {
             'backlog': self.backlog,
+            'value_losses': self.value_losses,
+            'policy_losses': self.policy_losses,
+            'entropy_losses': self.entropy_losses,
+            'old_approx_kls': self.old_approx_kls,
+            'approx_kls': self.approx_kls,
             'visited_native_states': self.visited_native_states,
             'time': self.time
         }
