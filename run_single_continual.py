@@ -257,6 +257,16 @@ def main():
     for idx, algo in enumerate(algos):
         summary['results'][algo] = {
             'avg_backlog': avg_backlogs[idx],
+            'actor_dormant': pi_stats['actor_dormant'][idx],
+            'critic_dormant': pi_stats['critic_dormant'][idx],
+            'actor_weight_norm': pi_stats['actor_weight_norm'][idx],
+            'critic_weight_norm': pi_stats['critic_weight_norm'][idx],
+            'total_losses': pi_stats['total_losses'][idx],
+            'value_losses': pi_stats['value_losses'][idx],
+            'policy_losses': pi_stats['policy_losses'][idx],
+            'entropy_losses': pi_stats['entropy_losses'][idx],
+            'old_approx_kls': pi_stats['old_approx_kls'][idx],
+            'approx_kls': pi_stats['approx_kls'][idx],
             # 'unstable_adv_mean': pi_stats['unstable_adv_mean'] if pi_stats else 0,
             # 'unstable_frac': pi_stats['unstable_frac'] if pi_stats else 0
             'visited_native_states': visited_native_states[idx]
