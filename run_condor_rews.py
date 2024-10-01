@@ -44,7 +44,7 @@ def get_cmd(seed,
             truncated_horizon,
             lr,
             replay_epochs,
-            adam_beta,
+            adam_betas,
             algo_info,
             condor = False):
   
@@ -66,7 +66,7 @@ def get_cmd(seed,
     arguments += ' --mdp_num %d' % FLAGS.mdp_num
     arguments += ' --deployed_interaction_steps %d' % FLAGS.deployed_interaction_steps
     
-    arguments += ' --adam_beta %f' % adam_beta
+    arguments += ' --adam_beta %f' % adam_betas
 
     arguments += ' --truncated_horizon %d' % truncated_horizon
     arguments += ' --replay_epochs %d' % replay_epochs
@@ -179,7 +179,7 @@ def main():  # noqa
     truncated_horizon = [200]
     replay_epoch = [10]
     lrs = [3e-4]
-    adam_betas = [0.9]
+    adam_betas = [0.9, 0.9]
     
     # (algo name, reward_func, state_transformation, normalize)
     rl_algos = [
@@ -224,8 +224,8 @@ def main():  # noqa
     all_combined = rl_combined + heur_combined
 
     for e in all_combined:
-        th, lr, rep_epoch, adam_beta, algo_info = e
-        _launch_trial(seeds, th, lr, rep_epoch, adam_beta, algo_info) # setting batch_size to th
+        th, lr, rep_epoch, adam_betas, algo_info = e
+        _launch_trial(seeds, th, lr, rep_epoch, adam_betas, algo_info) # setting batch_size to th
 
     print('%d experiments ran.' % ct)
 

@@ -68,12 +68,12 @@ class Agent(nn.Module):
 
         elif isinstance(self.env.action_space, gym.spaces.MultiDiscrete):
             split_logits = torch.split(logits, self.env.action_space.nvec.tolist(), dim=1)
-            multi_categoricals = [Categorical(logits = logits) for logits in split_logits]
+            multi_categoricals = [Categorical(logits=logits) for logits in split_logits]
             prob_dist = None  # TODO: Probability of all combinations of action 1 and 2
             if action is None:
                 action = torch.stack([categorical.sample() for categorical in multi_categoricals]).T
-            logprob = torch.stack([categorical.log_prob(a) for a, categorical in zip(action, multi_categoricals)]).sum(0)
-            entropy = torch.stack([categorical.entropy() for categorical in multi_categoricals]).sum(0)
+            logprob = torch.stack([categorical.log_prob(a) for a, categorical in zip(action, multi_categoricals)]).sum()
+            entropy = torch.stack([categorical.entropy() for categorical in multi_categoricals]).sum()
 
         return action, logprob, entropy, self.critic(x), prob_dist
 
@@ -98,14 +98,14 @@ class ARPPO:
                  gae_lambda=0.95,
                  norm_adv=True,
                  use_action_mask=False,
-                 adam_beta=0.9):
+                 adam_betas=(0.9, 0.9)):
 
         self.env = env
         self.agent = Agent(env, use_action_mask=use_action_mask)
         self.learning_rate = learning_rate
         self.optimizer = optim.Adam(self.agent.parameters(), \
                                     lr=learning_rate, eps=1e-8, \
-                                    betas=(adam_beta, adam_beta))
+                                    betas=adam_betas)
         self.anneal_lr = anneal_lr
         self.num_steps = num_steps
         self.batch_size = num_steps
@@ -128,7 +128,12 @@ class ARPPO:
     def train(self, total_timesteps=100_000):
 
         print_freq = self.round_to_multiple(10_000, self.batch_size)
+        actor_weight_norm = []
+        critic_weight_norm = []
+        actor_dormant = []
+        critic_dormant = []
         backlog = []
+        total_losses = []
         value_losses = []
         policy_losses = []
         entropy_losses = []
@@ -277,15 +282,30 @@ class ARPPO:
                 denom = np.arange(1, len(backlog) + 1)
                 avg_backlog = np.divide(np.cumsum(backlog), denom)
                 print(avg_backlog)
-
-            value_losses.append(v_loss.item())
-            policy_losses.append(pg_loss.item())
-            entropy_losses.append(entropy_loss.item())
-            old_approx_kls.append(old_approx_kl.item())
-            approx_kls.append(approx_kl.item())
+                actor_weights = torch.cat((torch.flatten(self.agent.actor[0].weight),
+                                           torch.flatten(self.agent.actor[2].weight),
+                                           torch.flatten(self.agent.actor[4].weight)))
+                critic_weights = torch.cat((torch.flatten(self.agent.critic[0].weight),
+                                           torch.flatten(self.agent.critic[2].weight),
+                                           torch.flatten(self.agent.critic[4].weight)))
+                actor_weight_norm.append(actor_weights.mean())
+                critic_weight_norm.append(critic_weights.mean())
+                actor_dormant.append((actor_weights == 0).sum())
+                critic_dormant.append((critic_weights == 0).sum())
+                total_losses.append(loss.item())
+                value_losses.append(v_loss.item())
+                policy_losses.append(pg_loss.item())
+                entropy_losses.append(entropy_loss.item())
+                old_approx_kls.append(old_approx_kl.item())
+                approx_kls.append(approx_kl.item())
 
         self.time = time
         self.backlog = backlog
+        self.actor_dormant = actor_dormant
+        self.critic_dormant = critic_dormant
+        self.actor_weight_norm = actor_weight_norm
+        self.critic_weight_norm = critic_weight_norm
+        self.total_losses = total_losses
         self.value_losses = value_losses
         self.policy_losses = policy_losses
         self.entropy_losses = entropy_losses
@@ -302,6 +322,11 @@ class ARPPO:
     def get_stats(self):
         stats = {
             'backlog': self.backlog,
+            'actor_dormant': self.actor_dormant,
+            'critic_dormant': self.critic_dormant,
+            'actor_weight_norm': self.actor_weight_norm,
+            'critic_weight_norm': self.actor_weight_norm,
+            'total_losses': self.total_losses,
             'value_losses': self.value_losses,
             'policy_losses': self.policy_losses,
             'entropy_losses': self.entropy_losses,

@@ -51,7 +51,7 @@ parser.add_argument('--use_action_mask', default=False, type=str2bool)
 parser.add_argument('--lyp_power', default=1., type=float)
 
 parser.add_argument('--replay_epochs', default=10, type=int)
-parser.add_argument('--adam_beta', default=0.9, type=float)
+parser.add_argument('--adam_betas', nargs=2, default=[0.9, 0.9], type=float)
 
 parser.add_argument('--truncated_horizon', default=2048, type=int)  # same as train_freq in DQN
 parser.add_argument('--deployed_interaction_steps', default=250000, type=int)
@@ -141,7 +141,6 @@ def _train_RL(env, algo_name, variant=None, state_transformation=None, fname=Non
     pt_path = None
 
     env.set_use_mask(FLAGS.use_action_mask)
-
     pi = CleanRLPolicy(env,
                        learning_rate=FLAGS.lr,
                        gamma=FLAGS.gamma,
@@ -149,7 +148,7 @@ def _train_RL(env, algo_name, variant=None, state_transformation=None, fname=Non
                        num_steps=FLAGS.truncated_horizon,
                        update_epochs=FLAGS.replay_epochs,
                        use_action_mask=FLAGS.use_action_mask,
-                       adam_beta=FLAGS.adam_beta
+                       adam_betas=FLAGS.adam_betas
                        )
 
     # continuing task
@@ -242,7 +241,6 @@ def main():
     algos = [algo_name]
     backlogs, visited_native_states, pi_stats = run_experiment_algo(env, algo_name)
 
-    pdb.set_trace()
     avg_backlogs = [np.divide(np.cumsum(backlog), denom) for backlog in backlogs]
     # avg_backlogs = [backlog for backlog in backlogs]
 

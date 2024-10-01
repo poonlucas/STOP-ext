@@ -363,7 +363,7 @@ class CleanRLPolicy:
                  gamma=0.99,
                  gae_lambda=0.95,
                  use_action_mask=False,
-                 adam_beta=0.9):
+                 adam_betas=(0.9, 0.9)):
 
         self.env = env
         self.pi = ARPPO(self.env,
@@ -373,7 +373,7 @@ class CleanRLPolicy:
                         update_epochs=update_epochs,
                         variant=variant,
                         use_action_mask=use_action_mask,
-                        adam_beta=adam_beta)
+                        adam_betas=adam_betas)
 
     def learn(self, total_timesteps):
         self.pi.train(total_timesteps=total_timesteps)
