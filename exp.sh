@@ -24,15 +24,15 @@ sleep 5
 # missing osmesa file, corrected with anaconda
 #conda install -y -c menpo osmesa
 #export C_INCLUDE_PATH="$ENVDIR/include:$C_LIBRARY_PATH"
-pip install stable-baselines3
+#pip install stable-baselines3
 WORKING_DIR="$(pwd)"
 mkdir d4rl_temp
 export D4RL_DATASET_DIR="$WORKING_DIR/d4rl_temp"
 #pip install git+https://github.com/rail-berkeley/d4rl@master#egg=d4rl
 
-pip install gymnasium
+#pip install gymnasium
 
-pip install libsumo
+#pip install libsumo
 export LIBSUMO_AS_TRACI=1
 
 # launch code

@@ -68,7 +68,7 @@ def get_cmd(seed,
     arguments += ' --mdp_num %d' % FLAGS.mdp_num
     arguments += ' --deployed_interaction_steps %d' % FLAGS.deployed_interaction_steps
 
-    arguments += ' --adam_betas %f' % adam_betas
+    arguments += ' --adam_betas %f %f' % (adam_betas[0], adam_betas[1])
 
     arguments += ' --truncated_horizon %d' % truncated_horizon
     arguments += ' --replay_epochs %d' % replay_epochs
@@ -108,7 +108,7 @@ def run_trial(seed,
         submitFile += 'arguments = ' + cmd + '\n'
         submitFile += 'error = %s.err\n' % outfile
         # submitFile += 'log = %s.log\n' % outfile
-        submitFile += 'log = /dev/null\n'
+        submitFile += 'log = logs/$(cluster).log\n'
         submitFile += 'output = /dev/null\n'
         # submitFile += 'output = %s.out\n' % outfile
         submitFile += 'should_transfer_files = YES\n'
@@ -153,7 +153,7 @@ def _launch_trial(seeds, t, lr, replay_epochs, adam_betas, algo_info):
                     t,
                     lr,
                     replay_epochs,
-                    adam_betas)
+                    str(adam_betas[0]) + "_" + str(adam_betas[1]))
 
         if os.path.exists(outfile):
             continue
@@ -220,7 +220,7 @@ def main():  # noqa
         # ('CCP3',),
     ]
 
-    heur_combined = [[0], [0], [0], [0], heur_algos]
+    heur_combined = [[0], [0], [0], [[0, 0]], heur_algos]
     heur_combined = list(itertools.product(*heur_combined))
 
     # all_combined = heur_combined
