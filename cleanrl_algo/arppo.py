@@ -128,17 +128,17 @@ class ARPPO:
     def train(self, total_timesteps=100_000):
 
         print_freq = self.round_to_multiple(10_000, self.batch_size)
-        actor_weight_norm = []
-        critic_weight_norm = []
-        actor_dormant = []
-        critic_dormant = []
         backlog = []
-        total_losses = []
-        value_losses = []
-        policy_losses = []
-        entropy_losses = []
-        old_approx_kls = []
-        approx_kls = []
+        self.actor_weight_norm = []
+        self.critic_weight_norm = []
+        self.actor_dormant = []
+        self.critic_dormant = []
+        self.total_losses = []
+        self.value_losses = []
+        self.policy_losses = []
+        self.entropy_losses = []
+        self.old_approx_kls = []
+        self.approx_kls = []
         visited_native_states = []
         time = []
 
@@ -225,6 +225,7 @@ class ARPPO:
             # Optimizing the policy and value network
             b_inds = np.arange(self.batch_size)
             clipfracs = []
+
             for epoch in range(self.update_epochs):
                 np.random.shuffle(b_inds)
                 for start in range(0, self.batch_size, self.minibatch_size):
@@ -282,35 +283,27 @@ class ARPPO:
                 denom = np.arange(1, len(backlog) + 1)
                 avg_backlog = np.divide(np.cumsum(backlog), denom)
                 print(avg_backlog)
-                actor_weights = torch.cat((torch.flatten(self.agent.actor[0].weight),
-                                           torch.flatten(self.agent.actor[2].weight),
-                                           torch.flatten(self.agent.actor[4].weight)))
-                critic_weights = torch.cat((torch.flatten(self.agent.critic[0].weight),
-                                           torch.flatten(self.agent.critic[2].weight),
-                                           torch.flatten(self.agent.critic[4].weight)))
-                actor_weight_norm.append(actor_weights.mean())
-                critic_weight_norm.append(critic_weights.mean())
-                actor_dormant.append((actor_weights == 0).sum())
-                critic_dormant.append((critic_weights == 0).sum())
-                total_losses.append(loss.item())
-                value_losses.append(v_loss.item())
-                policy_losses.append(pg_loss.item())
-                entropy_losses.append(entropy_loss.item())
-                old_approx_kls.append(old_approx_kl.item())
-                approx_kls.append(approx_kl.item())
+
+            actor_weights = torch.cat((torch.flatten(self.agent.actor[0].weight),
+                                       torch.flatten(self.agent.actor[2].weight),
+                                       torch.flatten(self.agent.actor[4].weight)))
+            critic_weights = torch.cat((torch.flatten(self.agent.critic[0].weight),
+                                       torch.flatten(self.agent.critic[2].weight),
+                                       torch.flatten(self.agent.critic[4].weight)))
+
+            self.actor_dormant.append((actor_weights == 0).sum())
+            self.critic_dormant.append((critic_weights == 0).sum())
+            self.actor_weight_norm.append(actor_weights.mean())
+            self.critic_weight_norm.append(critic_weights.mean())
+            self.total_losses.append(loss.item())
+            self.value_losses.append(v_loss.item())
+            self.policy_losses.append(pg_loss.item())
+            self.entropy_losses.append(entropy_loss.item())
+            self.old_approx_kls.append(old_approx_kl.item())
+            self.approx_kls.append(approx_kl.item())
 
         self.time = time
         self.backlog = backlog
-        self.actor_dormant = actor_dormant
-        self.critic_dormant = critic_dormant
-        self.actor_weight_norm = actor_weight_norm
-        self.critic_weight_norm = critic_weight_norm
-        self.total_losses = total_losses
-        self.value_losses = value_losses
-        self.policy_losses = policy_losses
-        self.entropy_losses = entropy_losses
-        self.old_approx_kls = old_approx_kls
-        self.approx_kls = approx_kls
         self.visited_native_states = visited_native_states
 
     def round_to_multiple(self, number, multiple):
