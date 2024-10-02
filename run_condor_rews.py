@@ -183,7 +183,7 @@ def main():  # noqa
     truncated_horizon = [200]
     replay_epoch = [10]
     lrs = [3e-4]
-    adam_betas = [0.9, 0.9]
+    adam_betas = [[0.9, 0.9]]
 
     # (algo name, reward_func, state_transformation, normalize)
     rl_algos = [

@@ -276,7 +276,6 @@ def main():
                 'approx_kls': pi_stats['approx_kls']
             })
     print(summary)
-    pdb.set_trace()
     np.save(FLAGS.outfile, summary)
 
 
