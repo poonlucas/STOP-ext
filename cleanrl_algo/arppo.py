@@ -129,6 +129,7 @@ class ARPPO:
 
         print_freq = self.round_to_multiple(10_000, self.batch_size)
         backlog = []
+        action_choice = []
         self.actor_weight_norm = []
         self.critic_weight_norm = []
         self.actor_dormant = []
@@ -186,6 +187,7 @@ class ARPPO:
                 rewards[step] = reward  # torch.tensor(reward).view(-1)
                 next_obs, next_done = torch.Tensor(next_obs), torch.Tensor([next_done])
                 backlog.append(infos['backlog'])
+                action_choice.append((logprob, action))
                 visited_native_states.append(infos['native_state'])
                 time.append(infos['time'])
 
@@ -291,10 +293,10 @@ class ARPPO:
                                        torch.flatten(self.agent.critic[2].weight),
                                        torch.flatten(self.agent.critic[4].weight)))
 
-            self.actor_dormant.append((actor_weights == 0).sum())
-            self.critic_dormant.append((critic_weights == 0).sum())
-            self.actor_weight_norm.append(actor_weights.mean())
-            self.critic_weight_norm.append(critic_weights.mean())
+            self.actor_dormant.append((actor_weights == 0).sum().item())
+            self.critic_dormant.append((critic_weights == 0).sum().item())
+            self.actor_weight_norm.append(actor_weights.mean().item())
+            self.critic_weight_norm.append(critic_weights.mean().item())
             self.total_losses.append(loss.item())
             self.value_losses.append(v_loss.item())
             self.policy_losses.append(pg_loss.item())
@@ -303,6 +305,7 @@ class ARPPO:
             self.approx_kls.append(approx_kl.item())
 
         self.time = time
+        self.action_choice = action_choice
         self.backlog = backlog
         self.visited_native_states = visited_native_states
 

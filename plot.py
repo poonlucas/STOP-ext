@@ -138,13 +138,16 @@ def collect_data():
             elif algo == 'STOP-L':
                 label = 'STOP-1'
 
+            if 'STOP' in algo:
+                label = label + "-[" + names[-2] + "-" + names[-1][:-4] + "]"
+
             if label not in data:
                 data[label] = {
                     'avg_backlog': [],
                     'learning_backlog': [],
                     'learning_timesteps': [],
                     'unstable_frac': [],
-                    'unstable_adv_mean': []
+                    'unstable_adv_mean': [],
                 }
             data[label]['avg_backlog'].append(results[algo]['avg_backlog'] if 'avg_backlog' in results[algo] else 0)
             data[label]['unstable_frac'].append(results[algo]['unstable_frac'] if 'unstable_frac' in results[algo] else 0)
