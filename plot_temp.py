@@ -10,12 +10,13 @@ if __name__ == '__main__':
     data = {}
     t = [200 * i for i in range(10000)]
     t2 = [1 * i for i in range(2000000)]
-    for basename in os.listdir('results/queue/betas/0.9_0.8'):
+    beta = "0.9"
+    for basename in os.listdir(f'results/queue/betas/0.9_{beta}'):
         if '.npy' not in basename:
             continue
         if '.npz' in basename:
             continue
-        f_name = os.path.join('results/queue/betas/0.9_0.8', basename)
+        f_name = os.path.join(f'results/queue/betas/0.9_{beta}', basename)
         # 'results_queue_main_mdp_2/env_queue_exp_main_algo_STOP-1.5_seed_553395_mdp-num_2_truncated-horizon_200_lr_0.0003_epochs_10_adam-beta_0.9.npy'
         names = f_name.split('_')
         summary = np.load(f_name, allow_pickle=True).item()
@@ -33,20 +34,20 @@ if __name__ == '__main__':
 
         ax2 = ax1.twinx()
 
-        ax2.set_ylabel('Loss')
+        ax2.set_ylabel('Loss (1e5)')
         color = 'tab:blue'
-        ax2.plot(t, results['total_losses'], color=color, label='Total Loss')
+        ax2.plot(t, np.divide(results['total_losses'], 1e5), color=color, label='Total Loss')
         color = 'tab:green'
-        ax2.plot(t, results['value_losses'], color=color, label='Value Loss')
+        ax2.plot(t, np.divide(results['value_losses'], 1e5), color=color, label='Value Loss')
         color = 'tab:orange'
-        ax2.plot(t, results['policy_losses'], color=color, label='Policy Loss')
+        ax2.plot(t, np.divide(results['policy_losses'], 1e5), color=color, label='Policy Loss')
         color = 'tab:brown'
-        ax2.plot(t, results['entropy_losses'], color=color, label='Entropy Loss')
+        ax2.plot(t, np.divide(results['entropy_losses'], 1e5), color=color, label='Entropy Loss')
         ax2.tick_params(axis='y', labelcolor=color)
         ax2.legend()
 
         fig.tight_layout()
-        plt.savefig(f'results/queue/betas/0.8_graphs/seed_{names[8]}_loss.png')
+        plt.savefig(f'results/queue/betas/{beta}_graphs/seed_{names[8]}_loss.png')
 
         plt.close()
 
@@ -74,7 +75,7 @@ if __name__ == '__main__':
         ax2.legend()
 
         fig.tight_layout()
-        plt.savefig(f'results/queue/betas/0.8_graphs/seed_{names[8]}_dormant.png')
+        plt.savefig(f'results/queue/betas/{beta}_graphs/seed_{names[8]}_dormant.png')
 
         plt.close()
 
@@ -101,6 +102,6 @@ if __name__ == '__main__':
         ax2.legend()
 
         fig.tight_layout()
-        plt.savefig(f'results/queue/betas/0.8_graphs/seed_{names[8]}_weight_norm.png')
+        plt.savefig(f'results/queue/betas/{beta}_graphs/seed_{names[8]}_weight_norm.png')
 
         plt.close()
