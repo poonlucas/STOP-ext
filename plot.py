@@ -35,7 +35,8 @@ def bool_argument(parser, name, default=False, msg=''):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('result_directory', help=help)
-parser.add_argument('--env_name', type = str)
+parser.add_argument('--env_name', type = str, default = 'queue')
+parser.add_argument('--mdp_num', type = int, default = 0)
 parser.add_argument('--tr_metric', type = str, default = 'avg_backlog')
 parser.add_argument('--type', type = str, choices = ['iterations', 'final'], default = 'iterations')
 parser.add_argument('--stat', type = str)
@@ -93,7 +94,7 @@ def plot_vs_iterations(data, file_name, plot_params, metric = 'err', interval_ty
     if plot_params['legend']:
         legend = plt.legend(fake_patches, algorithms, loc='best',
                             fancybox=True, ncol=2,  # len(algorithms),
-                            fontsize='40')  # xx-large')
+                            fontsize='20')  # xx-large')
 
     #ax.set_yscale('log')
     ax.set_ylim(plot_params['y_range'])
@@ -139,7 +140,7 @@ def collect_data():
                 label = 'STOP-1'
 
             if 'STOP' in algo:
-                label = label + "-[" + names[-2] + "-" + names[-1][:-4] + "]"
+                label = label + "-[" + names[-2] + "," + names[-1][:-4] + "]"
 
             if label not in data:
                 data[label] = {
@@ -174,7 +175,7 @@ def main():
                'legend_loc': 0,
                'legend_cols': 2,
                #'y_range': (90, 1000),
-               'y_range': (9, 28),  # (10, 20) 3.5, 2.6
+               'y_range': plot_custom_utils.avg_backlog_range(FLAGS.env_name, FLAGS.mdp_num),
                #'y_range': None,  #(10, 20),
                'x_range': None,
                'log_scale': False,

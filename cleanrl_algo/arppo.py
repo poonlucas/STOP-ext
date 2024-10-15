@@ -71,7 +71,7 @@ class Agent(nn.Module):
             multi_categoricals = [Categorical(logits=logits) for logits in split_logits]
             prob_dist = None  # TODO: Probability of all combinations of action 1 and 2
             if action is None:
-                action = torch.stack([categorical.sample() for categorical in multi_categoricals]).T
+                action = torch.cat([categorical.sample() for categorical in multi_categoricals])
             logprob = torch.stack([categorical.log_prob(a) for a, categorical in zip(action, multi_categoricals)]).sum()
             entropy = torch.stack([categorical.entropy() for categorical in multi_categoricals]).sum()
 
@@ -129,6 +129,7 @@ class ARPPO:
 
         print_freq = self.round_to_multiple(10_000, self.batch_size)
         backlog = []
+        action_proba = []
         #action_choice = []
         self.actor_weight_norm = []
         self.critic_weight_norm = []
@@ -176,7 +177,7 @@ class ARPPO:
 
                 # ALGO LOGIC: action logic
                 with torch.no_grad():
-                    action, logprob, _, value, _ = self.agent.get_action_and_value(next_obs)
+                    action, logprob, _, value, prob_dist = self.agent.get_action_and_value(next_obs)
                     values[step] = value.flatten()
                 actions[step] = action
                 logprobs[step] = logprob
@@ -186,6 +187,8 @@ class ARPPO:
                 next_done = np.logical_or(terminations, truncations)
                 rewards[step] = reward  # torch.tensor(reward).view(-1)
                 next_obs, next_done = torch.Tensor(next_obs), torch.Tensor([next_done])
+                if 7750 <= iteration <= 8100:
+                    action_proba.append(prob_dist[action].item())
                 backlog.append(infos['backlog'])
                 #action_choice.append((logprob, action))
                 visited_native_states.append(infos['native_state'])
@@ -307,6 +310,7 @@ class ARPPO:
         self.time = time
         #self.action_choice = action_choice
         self.backlog = backlog
+        self.action_proba = action_proba
         self.visited_native_states = visited_native_states
 
     def round_to_multiple(self, number, multiple):
@@ -329,6 +333,7 @@ class ARPPO:
             'old_approx_kls': self.old_approx_kls,
             'approx_kls': self.approx_kls,
             'visited_native_states': self.visited_native_states,
-            'time': self.time
+            'time': self.time,
+            'action_proba': self.action_proba
         }
         return stats

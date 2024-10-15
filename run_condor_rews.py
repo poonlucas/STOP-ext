@@ -183,7 +183,7 @@ def main():  # noqa
     truncated_horizon = [200]
     replay_epoch = [10]
     lrs = [3e-4]
-    adam_betas = [[0.9, 0.9]]
+    adam_betas = [[0.9, 0.8], [0.9, 0.9], [0.9, 0.999]]
 
     # (algo name, reward_func, state_transformation, normalize)
     rl_algos = [
@@ -209,6 +209,8 @@ def main():  # noqa
 
     rl_combined = [truncated_horizon, lrs, replay_epoch, adam_betas, rl_algos]
     rl_combined = list(itertools.product(*rl_combined))
+
+    pdb.set_trace()
 
     heur_algos = [
         # ('Thresh',),
