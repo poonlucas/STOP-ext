@@ -71,10 +71,10 @@ class Agent(nn.Module):
             multi_categoricals = [Categorical(logits=logits) for logits in split_logits]
             prob_dist = None  # TODO: Probability of all combinations of action 1 and 2
             if action is None:
-                action = torch.cat([categorical.sample() for categorical in multi_categoricals])
+                action = torch.stack([categorical.sample() for categorical in multi_categoricals])
             logprob = torch.stack([categorical.log_prob(a) for a, categorical in zip(action, multi_categoricals)]).sum()
             entropy = torch.stack([categorical.entropy() for categorical in multi_categoricals]).sum()
-
+            action = action.T
         return action, logprob, entropy, self.critic(x), prob_dist
 
 
@@ -130,7 +130,7 @@ class ARPPO:
         print_freq = self.round_to_multiple(10_000, self.batch_size)
         backlog = []
         action_proba = []
-        #action_choice = []
+        # action_choice = []
         self.actor_weight_norm = []
         self.critic_weight_norm = []
         self.actor_dormant = []
@@ -187,10 +187,10 @@ class ARPPO:
                 next_done = np.logical_or(terminations, truncations)
                 rewards[step] = reward  # torch.tensor(reward).view(-1)
                 next_obs, next_done = torch.Tensor(next_obs), torch.Tensor([next_done])
-                if 7750 <= iteration <= 8100:
-                    action_proba.append(prob_dist[action].item())
+                # if 7750 <= iteration <= 8100:
+                #     action_proba.append(prob_dist[action].item())
                 backlog.append(infos['backlog'])
-                #action_choice.append((logprob, action))
+                # action_choice.append((logprob, action))
                 visited_native_states.append(infos['native_state'])
                 time.append(infos['time'])
 
@@ -237,8 +237,13 @@ class ARPPO:
                     end = start + self.minibatch_size
                     mb_inds = b_inds[start:end]
 
-                    _, newlogprob, entropy, newvalue, _ = self.agent.get_action_and_value(b_obs[mb_inds],
-                                                                                          b_actions.long()[mb_inds])
+                    if isinstance(self.env.action_space, gym.spaces.Discrete):
+                        _, newlogprob, entropy, newvalue, _ = self.agent.get_action_and_value(b_obs[mb_inds],
+                                                                                              b_actions.long()[mb_inds])
+
+                    elif isinstance(self.env.action_space, gym.spaces.MultiDiscrete):
+                        _, newlogprob, entropy, newvalue, _ = self.agent.get_action_and_value(b_obs[mb_inds],
+                                                                                              b_actions.long()[mb_inds].T)
                     logratio = newlogprob - b_logprobs[mb_inds]
                     ratio = logratio.exp()
 
@@ -293,8 +298,8 @@ class ARPPO:
                                        torch.flatten(self.agent.actor[2].weight),
                                        torch.flatten(self.agent.actor[4].weight)))
             critic_weights = torch.cat((torch.flatten(self.agent.critic[0].weight),
-                                       torch.flatten(self.agent.critic[2].weight),
-                                       torch.flatten(self.agent.critic[4].weight)))
+                                        torch.flatten(self.agent.critic[2].weight),
+                                        torch.flatten(self.agent.critic[4].weight)))
 
             self.actor_dormant.append((torch.abs(actor_weights) < 0.1).sum().item())
             self.critic_dormant.append((torch.abs(critic_weights) < 0.1).sum().item())
@@ -308,7 +313,7 @@ class ARPPO:
             self.approx_kls.append(approx_kl.item())
 
         self.time = time
-        #self.action_choice = action_choice
+        # self.action_choice = action_choice
         self.backlog = backlog
         self.action_proba = action_proba
         self.visited_native_states = visited_native_states

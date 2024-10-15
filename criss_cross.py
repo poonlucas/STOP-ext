@@ -1,6 +1,9 @@
 import gymnasium as gym
 import numpy as np
 import pdb
+
+import torch
+
 from utils import powerset, symlog, symsqrt, sigmoid, tanh
 import math, random
 import copy
@@ -146,6 +149,7 @@ class CrissCrossNetwork(gym.Env):
         return state_next
 
     def step(self, a):
+        a = a.reshape(-1)
         assert self.action_space.contains(a)
         # assert self.observation_space.contains(self.native_state)
 
