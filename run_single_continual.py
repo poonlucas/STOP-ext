@@ -13,7 +13,7 @@ import torch
 from policies import LQ, LSR, LCQ, LSCQ, MaxWeight, Random, \
     LASQ, LSQ, Threshold, LSQNModel, MWNModel, LQNModel, CleanRLPolicy, \
     CCMaxWeight, CCPriority1, CCPriority3, CCBackPressure
-from server_allocation import SAQueue, SANetwork
+from server_allocation import SAQueue, SANetwork, NSSANetwork
 from nmodel import NModelNetwork
 from criss_cross import CrissCrossNetwork
 
@@ -41,7 +41,6 @@ parser.add_argument('--exp_name', type=str, required=True)
 parser.add_argument('--env_name', type=str, required=True)
 parser.add_argument('--algo_name', type=str, default='all')
 parser.add_argument('--mdp_num', default=0, type=int)
-parser.add_argument('--mdp_num2', default=-1, type=int)
 parser.add_argument('--gamma', default=0.999, type=float)
 parser.add_argument('--lr', default=3e-4, type=float)
 parser.add_argument('--act_function', default='relu', type=str)
@@ -149,7 +148,7 @@ def get_env(mdp_num = 0):
         print('stable policy exists {}'.format(env.is_stable()))
 
     if FLAGS.env_name == 'nsqueue':
-        env = SANetwork(qs, reward_func=FLAGS.reward_function, \
+        env = NSSANetwork(qs, reward_func=FLAGS.reward_function, \
                         state_trans=FLAGS.state_transformation,
                         gridworld=FLAGS.env_name == 'gridworld',
                         state_bound=FLAGS.state_bound,
