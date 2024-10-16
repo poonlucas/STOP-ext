@@ -210,8 +210,6 @@ def main():  # noqa
     rl_combined = [truncated_horizon, lrs, replay_epoch, adam_betas, rl_algos]
     rl_combined = list(itertools.product(*rl_combined))
 
-    pdb.set_trace()
-
     heur_algos = [
         # ('Thresh',),
         # ('MW',) if FLAGS.env_name == 'queue' else ('MWN',),
