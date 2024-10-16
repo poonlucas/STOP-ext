@@ -22,11 +22,16 @@ queue_lim = {
     1: (1.7, 1.95),
     2: (10, 25)
 }
+criss_cross_lim = {
+    0: (0.65, 0.73),
+}
 
 
 def avg_backlog_range(env='queue', mdp_num=0):
     if env == 'queue':
         return queue_lim[mdp_num]
+    elif env == 'crisscross':
+        return criss_cross_lim[mdp_num]
 
 
 def compute_stats(method, errors, plotting_stat='abs', print_log=False):

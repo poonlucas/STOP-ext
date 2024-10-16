@@ -282,13 +282,13 @@ class CCMaxWeight:
 
     def _get_action(self, s, t):
         if s[0] * self.env.mus[0] > s[2] * self.env.mus[2]:
-            return [1, 1]
+            return np.asarray([1, 1])
         elif s[0] * self.env.mus[0] < s[2] * self.env.mus[2]:
-            return [2, 1]
+            return np.asarray([2, 1])
         else:
             if np.random.random() >= 0.5:
                 return [1, 1]  # class 1, class 2
-            return [2, 1]
+            return np.asarray([2, 1])
 
 
 class CCPriority1:  # Class 1 if Buffer 1 is not empty, otherwise Class 3
@@ -305,18 +305,19 @@ class CCPriority1:  # Class 1 if Buffer 1 is not empty, otherwise Class 3
         return np.asarray(a)
 
 
+def _get_action(s, t):
+    a = [1, 1]  # class 1, class 2
+    if s[2] > 0:
+        a = [2, 1]  # class 3, class 2
+    return np.asarray(a)
+
+
 class CCPriority3:  # Class 1 if Buffer 1 is not empty, otherwise Class 3
     def __init__(self, env):
         self.env = env
 
     def __call__(self, obs, t=None):
-        return self._get_action(obs, t)
-
-    def _get_action(self, s, t):
-        a = [1, 1]  # class 1, class 2
-        if s[2] > 0:
-            a = [2, 1]  # class 3, class 2
-        return np.asarray(a)
+        return _get_action(obs, t)
 
 
 class CCBackPressure:  # Back Pressure

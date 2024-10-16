@@ -105,13 +105,6 @@ class CrissCrossNetwork(gym.Env):
 
         if self.reward_func == 'opt':
             reward = -1 * total_q_len
-        elif 'stab-pow' in self.reward_func:
-            opt_rew = -total_q_len
-            if np.abs(self.lyp_power - 1) <= 1e-5:
-                opt_rew = 1. / (total_q_len + 1)
-            prev_lens = np.power(np.sum(state[:self.dim] - self.goal), self.lyp_power)
-            curr_lens = np.power(np.sum(next_state[:self.dim] - self.goal), self.lyp_power)
-            reward = -1 * (curr_lens - prev_lens) + opt_rew
         elif 'stab' in self.reward_func:
             opt_rew = -total_q_len
             if np.abs(self.lyp_power - 1) <= 1e-5:
@@ -149,7 +142,7 @@ class CrissCrossNetwork(gym.Env):
         return state_next
 
     def step(self, a):
-        a = a.reshape(-1)
+        a = a.squeeze()
         assert self.action_space.contains(a)
         # assert self.observation_space.contains(self.native_state)
 
