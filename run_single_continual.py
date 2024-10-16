@@ -17,7 +17,7 @@ from server_allocation import SAQueue, SANetwork
 from nmodel import NModelNetwork
 from criss_cross import CrissCrossNetwork
 
-from env_configs import queue_configs, crisscross_configs
+from env_configs import queue_configs, ns_queue_configs, crisscross_configs
 
 import utils
 
@@ -41,6 +41,7 @@ parser.add_argument('--exp_name', type=str, required=True)
 parser.add_argument('--env_name', type=str, required=True)
 parser.add_argument('--algo_name', type=str, default='all')
 parser.add_argument('--mdp_num', default=0, type=int)
+parser.add_argument('--mdp_num2', default=-1, type=int)
 parser.add_argument('--gamma', default=0.999, type=float)
 parser.add_argument('--lr', default=3e-4, type=float)
 parser.add_argument('--act_function', default='relu', type=str)
@@ -65,9 +66,9 @@ log_dir = 'temp_{}'.format(FLAGS.outfile)
 os.makedirs(log_dir, exist_ok=True)
 
 
-def get_env():
+def get_env(mdp_num = 0):
     if FLAGS.env_name == 'queue':
-        config = queue_configs[FLAGS.mdp_num]
+        config = queue_configs[mdp_num]
         qs = []
         for idx, con in enumerate(config):
             info = {
@@ -86,6 +87,30 @@ def get_env():
             }
             q = SAQueue(str(idx), info)
             qs.append(q)
+        qs = np.array(qs)
+    elif FLAGS.env_name == 'ns_queue':
+        trans_config = ns_queue_configs[mdp_num]
+        qs = []
+        for config in trans_config:
+            trans_qs = []
+            for idx, con in enumerate(config):
+                info = {
+                    'arrival': {
+                        'is_stationary': True,
+                        'prob': con[0]
+                    },
+                    'service': {
+                        'is_stationary': True,
+                        'prob': con[1]
+                    },
+                    'connection': {
+                        'is_stationary': True,
+                        'prob': con[2],
+                    }
+                }
+                q = SAQueue(str(idx), info)
+                trans_qs.append(q)
+            qs.append(trans_qs)
         qs = np.array(qs)
 
     elif FLAGS.env_name == 'nmodel':
@@ -106,7 +131,7 @@ def get_env():
             mus = [1., 0.9, 0.8]
 
     elif FLAGS.env_name == 'crisscross':
-        arrivals, mus = crisscross_configs[FLAGS.mdp_num]
+        arrivals, mus = crisscross_configs[mdp_num]
         env = CrissCrossNetwork(arrivals,
                                 mus,
                                 reward_func=FLAGS.reward_function,
@@ -122,6 +147,15 @@ def get_env():
                         state_bound=FLAGS.state_bound,
                         lyp_power=FLAGS.lyp_power)
         print('stable policy exists {}'.format(env.is_stable()))
+
+    if FLAGS.env_name == 'nsqueue':
+        env = SANetwork(qs, reward_func=FLAGS.reward_function, \
+                        state_trans=FLAGS.state_transformation,
+                        gridworld=FLAGS.env_name == 'gridworld',
+                        state_bound=FLAGS.state_bound,
+                        lyp_power=FLAGS.lyp_power)
+        print('stable policy exists {}'.format(env.is_stable()))
+
     elif FLAGS.env_name == 'nmodel':
         env = NModelNetwork(arrivals,
                             mus,
@@ -233,7 +267,10 @@ def run_experiment_algo(env, algo_name):
 def main():
     seed = FLAGS.seed
     utils.set_seed_everywhere(seed)
+
     env = get_env()
+    if FLAGS.mdp_num2 != -1:
+        env2 = get_env()
 
     denom = np.arange(1, FLAGS.deployed_interaction_steps / FLAGS.deployed_interaction_step_skip + 1)
 

@@ -24,6 +24,7 @@ queue_lim = {
 }
 criss_cross_lim = {
     0: (0.65, 0.73),
+    2: (6, 12)
 }
 
 
