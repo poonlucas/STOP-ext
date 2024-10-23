@@ -89,7 +89,6 @@ def get_env(mdp_num = 0):
         qs = np.array(qs)
 
     elif FLAGS.env_name == 'nsqueue':
-        pdb.set_trace()
         trans_config = ns_queue_configs[mdp_num]
         qs = []
         for config in trans_config:
@@ -269,7 +268,7 @@ def main():
     seed = FLAGS.seed
     utils.set_seed_everywhere(seed)
 
-    env = get_env()
+    env = get_env(FLAGS.mdp_num)
     denom = np.arange(1, FLAGS.deployed_interaction_steps / FLAGS.deployed_interaction_step_skip + 1)
 
     algo_name = FLAGS.algo_name

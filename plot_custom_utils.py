@@ -26,6 +26,9 @@ criss_cross_lim = {
     0: (0.65, 0.73),
     2: (6, 12)
 }
+nsqueue_lim = {
+    0: (1.7, 30)
+}
 
 
 def avg_backlog_range(env='queue', mdp_num=0):
@@ -33,6 +36,8 @@ def avg_backlog_range(env='queue', mdp_num=0):
         return queue_lim[mdp_num]
     elif env == 'crisscross':
         return criss_cross_lim[mdp_num]
+    elif env == 'nsqueue':
+        return nsqueue_lim[mdp_num]
 
 
 def compute_stats(method, errors, plotting_stat='abs', print_log=False):

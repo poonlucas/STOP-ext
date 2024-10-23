@@ -287,7 +287,7 @@ class CCMaxWeight:
             return np.asarray([2, 1])
         else:
             if np.random.random() >= 0.5:
-                return [1, 1]  # class 1, class 2
+                return np.asarray([1, 1])  # class 1, class 2
             return np.asarray([2, 1])
 
 
@@ -380,7 +380,6 @@ class CleanRLPolicy:
         self.pi.train(total_timesteps=total_timesteps)
 
     def __call__(self, state, t=None):
-        pdb.set_trace()
         if self.use_lcq:
             ent = self.pi.get_entropy(state).item()
             if ent >= 0.5:
