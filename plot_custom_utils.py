@@ -20,11 +20,15 @@ from rliable import plot_utils
 queue_lim = {
     0: (1.3, 1.8),
     1: (1.7, 1.95),
-    2: (10, 25)
+    2: (10, 25),
+}
+nmodel_lim = {
+    0: (90, 300),
+    1: (90, 150),
 }
 criss_cross_lim = {
     0: (0.65, 0.73),
-    2: (6, 12)
+    2: (9, 20),
 }
 nsqueue_lim = {
     0: (1.7, 30)
@@ -34,6 +38,8 @@ nsqueue_lim = {
 def avg_backlog_range(env='queue', mdp_num=0):
     if env == 'queue':
         return queue_lim[mdp_num]
+    elif env == 'nmodel':
+        return nmodel_lim[mdp_num]
     elif env == 'crisscross':
         return criss_cross_lim[mdp_num]
     elif env == 'nsqueue':

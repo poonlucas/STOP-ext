@@ -11,7 +11,8 @@ if __name__ == '__main__':
     t = [200 * i for i in range(10000)]
     t2 = [1 * i for i in range(2000000)]
     #dir = "results/queue/betas"
-    dir = "results/queue/betas_new/mdp2"
+    #dir = "results/queue/betas_new/mdp2"
+    dir = "results/hihi"
     beta = "0.8"
     # avg_backlog_lim = [1.7, 1.95]
     avg_backlog_lim = [10, 25]
@@ -33,7 +34,7 @@ if __name__ == '__main__':
         ax1.set_xlabel('Interaction Steps (x10)')
         ax1.set_ylabel('Avg. Queue Length', color=color)
         ax1.plot(t2, results['avg_backlog'], color=color)
-        ax1.set_ylim(avg_backlog_lim)
+        #ax1.set_ylim(avg_backlog_lim)
         ax1.tick_params(axis='y', labelcolor=color)
 
         ax2 = ax1.twinx()

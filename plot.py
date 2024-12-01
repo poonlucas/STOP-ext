@@ -65,7 +65,7 @@ def plot_vs_iterations(data, file_name, plot_params, metric = 'err', interval_ty
         metric_val_dict[algo] = m_vals
         num_x_ticks = m_vals.shape[-1]
 
-    times = np.array([i for i in range(num_x_ticks)]) 
+    times = np.array([i for i in range(num_x_ticks)])
 
     times_metrics_dict = {algorithm: metric_val[:, :, times] for algorithm, metric_val
                               in metric_val_dict.items()}
@@ -94,10 +94,11 @@ def plot_vs_iterations(data, file_name, plot_params, metric = 'err', interval_ty
     if plot_params['legend']:
         legend = plt.legend(fake_patches, algorithms, loc='best',
                             fancybox=True, ncol=2,  # len(algorithms),
-                            fontsize='20')  # xx-large')
+                            fontsize='25')  # xx-large')
 
     #ax.set_yscale('log')
     ax.set_ylim(plot_params['y_range'])
+    ax.xaxis.get_offset_text().set_size('30')
     #plt.legend(fontsize = 20, loc = 'best')
     plt.tight_layout()
     plt.savefig('{}.jpg'.format(file_name))
@@ -138,6 +139,12 @@ def collect_data():
                 label = 'STOP-2'
             elif algo == 'STOP-L':
                 label = 'STOP-1'
+            elif algo == 'CCMW':
+                label = 'Max Weight'
+            elif algo == 'CCP1':
+                label = 'Priority 1'
+            elif algo == 'CCP3':
+                label = 'Priority 3'
 
             if 'STOP' in algo:
                 label = label + "-[" + names[-2] + "," + names[-1][:-4] + "]"
@@ -180,7 +187,7 @@ def main():
                'x_range': None,
                'log_scale': False,
                    #'y_label': r'(relative) MSE($\rho(\pi_e)$)',
-               'y_label': FLAGS.y_label,
+               'y_label': 'Avg. Queue Length',
                    #'y_label': '(relative) MSE',
                'shade_error': True,
                'x_mult': 1,
