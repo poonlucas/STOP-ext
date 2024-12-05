@@ -99,6 +99,7 @@ def plot_vs_iterations(data, file_name, plot_params, metric = 'err', interval_ty
     #ax.set_yscale('log')
     ax.set_ylim(plot_params['y_range'])
     ax.xaxis.get_offset_text().set_size('30')
+    ax.yaxis.get_offset_text().set_size('30')
     #plt.legend(fontsize = 20, loc = 'best')
     plt.tight_layout()
     plt.savefig('{}.jpg'.format(file_name))
