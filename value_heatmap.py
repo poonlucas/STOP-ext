@@ -12,7 +12,6 @@ from env_configs import queue_configs
 from server_allocation import SAQueue, SANetwork
 import seaborn as sns
 from matplotlib import pyplot as plt
-from matplotlib import cm
 
 
 def str2bool(v):
@@ -25,25 +24,18 @@ def str2bool(v):
 
 
 parser = argparse.ArgumentParser()
-# common setup
-parser.add_argument('--outfile', default=None)
 
 parser.add_argument('--env_name', type=str, required=True)
 parser.add_argument('--algo_name', type=str, default='all')
 parser.add_argument('--mdp_num', default=0, type=int)
 parser.add_argument('--state_bound', default=np.inf, type=float)
-parser.add_argument('--reward_function', default='opt', type=str)
-parser.add_argument('--state_transformation', default='id', type=str)
-parser.add_argument('--lyp_power', default=1., type=float)
+parser.add_argument('--lyp_power', default=-1., type=float)
 
 parser.add_argument('--compare', default=None, type=str)
 parser.add_argument('--normalize', default=False, type=str2bool)
 parser.add_argument('--model', default=False, type=str2bool)
 
 FLAGS = parser.parse_args()
-
-out_dir = os.path.join('heatmaps', f'{FLAGS.env_name}', f'mdp_{FLAGS.mdp_num}', f'{FLAGS.outfile}')
-os.makedirs(out_dir, exist_ok=True)
 
 
 # For Numba
@@ -89,45 +81,45 @@ class SALyapunov:
     def __init__(self, env):
         self.env = env
         self.bound = 30
-        self.ma = np.zeros((self.bound, self.bound))
+        self.vf = np.zeros((self.bound, self.bound))
         for i in range(self.bound):
             for j in range(self.bound):
-                self.ma[i, j] = -(i ** self.env.lyp_power + j ** self.env.lyp_power) / 2
+                self.vf[i, j] = -(i ** self.env.lyp_power + j ** self.env.lyp_power) / 2
 
-    def get_ma(self):
-        return self.ma
+    def get_vf(self):
+        return self.vf
 
 
 class SALyapunovPow:
     def __init__(self, env):
         self.env = env
         self.bound = 30
-        self.ma = np.zeros((self.bound, self.bound))
+        self.vf = np.zeros((self.bound, self.bound))
         for i in range(self.bound):
             for j in range(self.bound):
-                self.ma[i, j] = -((i + j) / 2) ** self.env.lyp_power
+                self.vf[i, j] = -((i + j) / 2) ** self.env.lyp_power
 
-    def get_ma(self):
-        return self.ma
+    def get_vf(self):
+        return self.vf
 
 
 class SALyapunovPiecewise:
     def __init__(self, env):
         self.env = env
         self.bound = 30
-        self.ma = np.zeros((self.bound, self.bound))
+        self.vf = np.zeros((self.bound, self.bound))
         for i in range(self.bound):
             for j in range(self.bound):
                 if i == 0:
-                    self.ma[i, j] = -((i + j) / 2) ** 2.5
+                    self.vf[i, j] = -((i + j) / 2) ** 2.5
                 else:
-                    self.ma[i, j] = -((i + j) / 2)
+                    self.vf[i, j] = -((i + j) / 2)
 
-    def get_ma(self):
-        return self.ma
+    def get_vf(self):
+        return self.vf
 
 
-class SAOptimal:  # Value iteration bounded by state space of 60
+class SAOptimal:  # VI / DP
     def __init__(self, env):
         self.env = env
         self.bound = 120  # 60, 120
@@ -194,13 +186,23 @@ class SAOptimal:  # Value iteration bounded by state space of 60
                                  f'{self.env.qs[0].get_service_prob(0)}_{self.env.qs[1].get_service_prob(0)}'
                                  f'_bound_{self.bound}'), self.Q)
 
-    def get_ma(self):
+    def get_vf(self):
         # 30
-        ma = np.zeros((30, 30))
+        vf = np.zeros((30, 30))
         for q1 in range(30):
             for q2 in range(30):
-                ma[q1, q2] = np.max(self.Q[int(q1), int(q2)])
-        return ma
+                vf[q1, q2] = np.max(self.Q[int(q1), int(q2)])
+        return vf
+
+    def get_vfs(self):
+        vfs = []
+        for i in [30, 45, 60]:
+            vf = np.zeros((i, i))
+            for q1 in range(i):
+                for q2 in range(i):
+                    vf[q1, q2] = np.max(self.Q[int(q1), int(q2)])
+            vfs.append(vf)
+        return vfs
 
 
 @jit(nopython=True)
@@ -342,7 +344,7 @@ class SAPolicy:
         return ma
 
 
-def get_env():
+def get_env(lyp_power):
     if FLAGS.env_name == 'queue':
         config = queue_configs[FLAGS.mdp_num]
         qs = []
@@ -364,18 +366,16 @@ def get_env():
             q = SAQueue(str(idx), info)
             qs.append(q)
         qs = np.array(qs)
-        env = SANetwork(qs, reward_func=FLAGS.reward_function,
-                        state_trans=FLAGS.state_transformation,
+        env = SANetwork(qs, reward_func='opt',
+                        state_trans='id',
                         gridworld=FLAGS.env_name == 'gridworld',
                         state_bound=FLAGS.state_bound,
-                        lyp_power=FLAGS.lyp_power)
+                        lyp_power=lyp_power)
         print('stable policy exists {}'.format(env.is_stable()))
         return env
 
 
-def main():
-    env = get_env()
-
+def get_pi(env):
     pi = None
     if FLAGS.algo_name == "lyp":
         pi = SALyapunov(env)
@@ -387,21 +387,24 @@ def main():
         pi = SAOptimal(env)
     elif FLAGS.algo_name == "random" or "lcq" or "mw" or "lscq":
         pi = SAPolicy(env, FLAGS.algo_name)
-    ma = pi.get_ma()
+    return pi
 
-    if FLAGS.model:
-        ma_shape = ma.shape
+
+def model(opt):
+    vfs = opt.get_vfs()
+    for vf in vfs:
+        vf_shape = vf.shape
         X1 = []  # ax^2 + by^2 + cx + dy
         X2 = []  # ax^2 + by^2 + cxy
         X3 = []  # ax^2 + by^2 + 2abxy
         X4 = []  # ax + by
         Y = []
-        for i in range(1, ma_shape[0]):
-            for j in range(1, ma_shape[1]):
+        for i in range(1, vf_shape[0]):
+            for j in range(1, vf_shape[1]):
                 X1.append([i ** 2, j ** 2, i, j])
                 X2.append([i ** 2, j ** 2, i * j])
                 X4.append([i, j])
-                Y.append(ma[i, j])
+                Y.append(vf[i, j])
 
         # for i in range(ma_shape[0]):
         #     X1.append([i ** 2, i])
@@ -416,9 +419,11 @@ def main():
         theta2 = np.dot(np.dot(np.linalg.inv(np.dot(X2.T, X2)), X2.T), Y)
         theta4 = np.dot(np.dot(np.linalg.inv(np.dot(X4.T, X4)), X4.T), Y)
 
-        print(f"Option 1: {theta1[0]} q1^2 + {theta1[1]} q2^2 + {theta1[2]} q1 + {theta1[3]} q2")
-        print(f"Option 2: {theta2[0]} q1^2 + {theta2[1]} q2^2 + {theta2[2]} q1q2")
-        print(f"Option 3: {theta4[0]} q1 + {theta4[1]} q2")
+        print(f"{vf_shape[1]}: {round(theta1[0], 5)} Q_1^2 + {round(theta1[1], 5)} Q_2^2 + "
+              f"{round(theta1[2], 5)} Q_1 + {round(theta1[3], 5)} Q_2")
+        print(f"  : {round(np.abs(theta1[0]/ theta1[2]), 5)}, {round(np.abs(theta1[1]/ theta1[3]), 5)}")
+        # print(f"Option 2: {theta2[0]} q1^2 + {theta2[1]} q2^2 + {theta2[2]} q1q2")
+        # print(f"Option 3: {theta4[0]} q1 + {theta4[1]} q2")
 
         # print(f"Option 1: {theta1[0]} q1^2 + {theta1[1]} q1")
         # print(f"Option 2: {theta2[0]} q1^2")
@@ -430,60 +435,117 @@ def main():
         #         temp.append(np.sum(np.dot(theta, np.asarray([i ** 2, j ** 2, i, j]))))
         #     model.append(temp)
 
+
+def normalize(vf):
+    min_vf = np.min(vf)
+    max_vf = np.max(vf)
+    norm_vf = (np.array(vf) - min_vf) / (max_vf - min_vf)
+    return norm_vf
+
+
+def main():
+    # Get environments
+    if FLAGS.lyp_power == -1:  # do all lyp powers
+        envs = [get_env(p / 2.) for p in range(2, 7)]
+    else:
+        envs = [get_env(FLAGS.lyp_power)]
+
+    # Create output dirs
+    outfiles = [f'lyp-{env.lyp_power}' if env.lyp_power != -1 else 'opt' for env in envs]
+    out_dirs = [os.path.join('heatmaps', f'{FLAGS.env_name}', f'mdp_{FLAGS.mdp_num}', f'{outfile}') for outfile in
+                outfiles]
+    for out_dir in out_dirs:
+        os.makedirs(out_dir, exist_ok=True)
+
+    # Get policy and corresponding value function
+    pis = [get_pi(env) for env in envs]
+    vfs = [pi.get_vf() for pi in pis]
+
     if FLAGS.normalize:
-        min_ma = np.min(ma)
-        max_ma = np.max(ma)
-        ma = (np.array(ma) - min_ma) / (max_ma - min_ma)
-        np.save(os.path.join('heatmaps', f'{FLAGS.env_name}', f'mdp_{FLAGS.mdp_num}', f'{FLAGS.outfile}', f'{FLAGS.algo_name}'), ma)
+        vfs = [normalize(vf) for vf in vfs]
+        for idx, vf in enumerate(vfs):
+            np.save(os.path.join('heatmaps', f'{FLAGS.env_name}', f'mdp_{FLAGS.mdp_num}', f'{outfiles[idx]}',
+                                 f'{FLAGS.algo_name}'), vf)
 
     if FLAGS.compare is not None:
         c_pi = None
         if FLAGS.compare == "opt":
-            c_pi = SAOptimal(env)
-        c_ma = c_pi.get_ma()
+            c_pi = SAOptimal(get_env(-1.))
+        c_vf = c_pi.get_vf()
         if FLAGS.normalize:
-            min_c_ma = np.min(c_ma)
-            max_c_ma = np.max(c_ma)
-            c_ma = (np.array(c_ma) - min_c_ma) / (max_c_ma - min_c_ma)
-        ma = np.abs(ma - c_ma)
+            c_vf = normalize(c_vf)
 
-    plt.rcParams.update({'font.size': 18})
+            model(c_pi)
 
-    plt.figure(figsize=(20, 18))
+            plt.rcParams.update({'font.size': 18})
+            plt.figure(figsize=(20, 18))
+            ax = sns.heatmap(c_vf, linewidth=0.5)
+            ax.invert_yaxis()
+            plt.title('Value')
+            plt.xlabel('Q1 length')
+            plt.ylabel('Q2 length')
+            plt.savefig(f'heatmaps/{FLAGS.env_name}/mdp_{FLAGS.mdp_num}/opt/opt_heat.jpg',
+                        bbox_inches='tight')
+            plt.close()
 
-    ax = sns.heatmap(ma, linewidth=0.5)
-    ax.invert_yaxis()
-    plt.title('Value')
-    plt.xlabel('Q1 length')
-    plt.ylabel('Q2 length')
+            x, y = np.meshgrid(np.arange(c_vf.shape[1]), np.arange(c_vf.shape[0]))
+            fig = plt.figure(figsize=(20, 18))
+            ax = fig.add_subplot(111, projection='3d')
+            cmap = sns.color_palette("rocket", as_cmap=True)
+            surface = ax.plot_surface(x, y, c_vf, cmap=cmap)
+            fig.colorbar(surface, ax=ax, shrink=0.5, aspect=5)
 
-    outfile = FLAGS.algo_name
-    if "lyp" in FLAGS.algo_name:
-        outfile = outfile + str(FLAGS.lyp_power)
-    if FLAGS.compare is not None:
-        outfile = outfile + "-" + FLAGS.compare
-    if FLAGS.normalize:
-        outfile = outfile + "_normalized"
+            ax.view_init(elev=40, azim=45)  # 225 for (0,0), 45 for (30,30)
 
-    plt.savefig(f'heatmaps/{FLAGS.env_name}/mdp_{FLAGS.mdp_num}/{FLAGS.outfile}/{outfile}_heat.jpg', bbox_inches='tight')
-    plt.close()
+            ax.set_xlabel('Q1 length', labelpad=20)
+            ax.set_ylabel('Q2 length', labelpad=20)
+            ax.set_zlabel('Value', labelpad=20)
 
-    x, y = np.meshgrid(np.arange(ma.shape[1]), np.arange(ma.shape[0]))
-    fig = plt.figure(figsize=(20, 18))
-    ax = fig.add_subplot(111, projection='3d')
-    cmap = sns.color_palette("rocket", as_cmap=True)
-    surface = ax.plot_surface(x, y, ma, cmap=cmap)
-    fig.colorbar(surface, ax=ax, shrink=0.5, aspect=5)
+            plt.savefig(f'heatmaps/{FLAGS.env_name}/mdp_{FLAGS.mdp_num}/opt/opt_3dheat.jpg',
+                        bbox_inches='tight')
+            plt.close()
 
-    ax.view_init(elev=40, azim=45)  # 225 for (0,0), 45 for (30,30)
+        vfs = [np.abs(vf - c_vf) for vf in vfs]
 
-    ax.set_xlabel('Q1 length', labelpad=20)
-    ax.set_ylabel('Q2 length', labelpad=20)
-    ax.set_zlabel('Value', labelpad=20)
+    vmax = np.max(vfs)
+    for idx, vf in enumerate(vfs):
+        plt.rcParams.update({'font.size': 18})
+        plt.figure(figsize=(20, 18))
+        ax = sns.heatmap(vf, linewidth=0.5, vmax=vmax)
+        ax.invert_yaxis()
+        plt.title('Value')
+        plt.xlabel('Q1 length')
+        plt.ylabel('Q2 length')
 
-    plt.savefig(f'heatmaps/{FLAGS.env_name}/mdp_{FLAGS.mdp_num}/{FLAGS.outfile}/{outfile}_3dheat.jpg', bbox_inches='tight')
+        outfile = FLAGS.algo_name
+        if "lyp" in FLAGS.algo_name:
+            outfile = outfile + str(envs[idx].lyp_power)
+        if FLAGS.compare is not None:
+            outfile = outfile + "-" + FLAGS.compare
+        if FLAGS.normalize:
+            outfile = outfile + "_normalized"
 
-    plt.show()
+        plt.savefig(f'heatmaps/{FLAGS.env_name}/mdp_{FLAGS.mdp_num}/{outfiles[idx]}/{outfile}_heat.jpg',
+                    bbox_inches='tight')
+        plt.close()
+
+    # x, y = np.meshgrid(np.arange(ma.shape[1]), np.arange(ma.shape[0]))
+    # fig = plt.figure(figsize=(20, 18))
+    # ax = fig.add_subplot(111, projection='3d')
+    # cmap = sns.color_palette("rocket", as_cmap=True)
+    # surface = ax.plot_surface(x, y, ma, cmap=cmap)
+    # fig.colorbar(surface, ax=ax, shrink=0.5, aspect=5)
+    #
+    # ax.view_init(elev=40, azim=45)  # 225 for (0,0), 45 for (30,30)
+    #
+    # ax.set_xlabel('Q1 length', labelpad=20)
+    # ax.set_ylabel('Q2 length', labelpad=20)
+    # ax.set_zlabel('Value', labelpad=20)
+    #
+    # plt.savefig(f'heatmaps/{FLAGS.env_name}/mdp_{FLAGS.mdp_num}/{FLAGS.outfile}/{outfile}_3dheat.jpg',
+    #             bbox_inches='tight')
+    #
+    # plt.show()
 
 
 if __name__ == '__main__':
