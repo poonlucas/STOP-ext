@@ -10,6 +10,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.distributions.categorical import Categorical
+
+from cleanrl_algo.cadam import CAdam
 from utils import plot_heatmap
 
 
@@ -104,9 +106,11 @@ class ARPPO:
         self.env = env
         self.agent = Agent(env, use_action_mask=use_action_mask)
         self.learning_rate = learning_rate
-        self.optimizer = optim.Adam(self.agent.parameters(), \
-                                    lr=learning_rate, eps=1e-8, \
-                                    betas=adam_betas)
+        # self.optimizer = optim.Adam(self.agent.parameters(), \
+        #                             lr=learning_rate, eps=1e-8, \
+        #                             betas=adam_betas)
+        self.optimizer = CAdam(self.agent.parameters(), lr=learning_rate, eps=1e-8, betas=adam_betas)
+
         self.anneal_lr = anneal_lr
         self.num_steps = num_steps
         self.batch_size = num_steps
