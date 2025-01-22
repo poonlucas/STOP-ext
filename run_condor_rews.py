@@ -99,11 +99,7 @@ def run_trial(seed,
                   adam_betas,
                   algo_info)
     if condor:
-        if FLAGS.env_name == 'traffic':
-            submitFile = 'universe = container\n'
-            submitFile += 'container_image = http://proxy.chtc.wisc.edu/SQUID/llpoon/sumo.sif\n'
-        else:
-            submitFile = 'universe = vanilla\n'
+        submitFile = 'universe = vanilla\n'
         submitFile += 'executable = ' + EXECUTABLE + "\n"
         submitFile += 'arguments = ' + cmd + '\n'
         submitFile += 'error = %s.err\n' % outfile
@@ -114,16 +110,12 @@ def run_trial(seed,
         submitFile += 'should_transfer_files = YES\n'
         submitFile += 'when_to_transfer_output = ON_EXIT\n'
 
-        setup_files = 'http://proxy.chtc.wisc.edu/SQUID/llpoon/research.tar.gz'
+        setup_files = '/staging/llpoon/research.tar.gz'
         common_main_files = 'run_single_continual.py, policies.py, utils.py, cleanrl_algo'
 
-        if FLAGS.env_name == 'traffic':
-            domains = 'run_traffic.py, sumo'
-            submitFile += 'transfer_input_files = http://proxy.chtc.wisc.edu/SQUID/llpoon/sumo.sif, {}, {}, {}\n'.format(
-                setup_files, common_main_files, domains)
-        else:
-            domains = 'server_allocation.py, nmodel.py, criss_cross.py, env_configs.py'
-            submitFile += 'transfer_input_files = {}, {}, {}\n'.format(setup_files, common_main_files, domains)
+        domains = 'server_allocation.py, nmodel.py, criss_cross.py, env_configs.py'
+        submitFile += 'transfer_input_files = {}, {}, {}\n'.format(setup_files, common_main_files, domains)
+
         submitFile += 'requirements = (has_avx == True)\n'
         submitFile += 'request_cpus = 1\n'
         submitFile += 'request_memory = 20GB\n'

@@ -12,7 +12,7 @@ class CAdam(Optimizer):
         if not 0.0 <= lr:
             raise ValueError(f"Invalid learning rate: {lr}")
         if not 0.0 <= eps:
-            raise ValueError(f"Invalid epsilon value: {eps}")
+            raise ValueError(f"Invalid e psilon value: {eps}")
         if not 0.0 <= betas[0] < 1.0:
             raise ValueError(f"Invalid beta parameter at index 0: {betas[0]}")
         if not 0.0 <= betas[1] < 1.0:
