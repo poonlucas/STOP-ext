@@ -1,9 +1,11 @@
 """
 Adapted from: https://pytorch.org/docs/1.6.0/_modules/torch/optim/adam.html
 """
+import math
+
 import torch
 from torch.optim import Optimizer
-from torch.optim.optimizer import _dispatch_sqrt, _get_value
+from torch.optim.optimizer import _get_value
 
 
 class CAdam(Optimizer):
@@ -89,14 +91,14 @@ class CAdam(Optimizer):
                         exp_avg.lerp_(grad, 1 - beta1)
                         exp_avg_sq.mul_(beta2).addcmul_(grad, grad.conj(), value=1 - beta2)
 
-                        step = _get_value(step_t)
+                        step = step_t.item()
 
                         bias_correction1 = 1 - beta1 ** step
                         bias_correction2 = 1 - beta2 ** step
 
                         step_size = group['lr'] / bias_correction1
 
-                        bias_correction2_sqrt = _dispatch_sqrt(bias_correction2)
+                        bias_correction2_sqrt = math.sqrt(bias_correction2)
 
                         denom = (exp_avg_sq.sqrt() / bias_correction2_sqrt).add_(group['eps'])
 
