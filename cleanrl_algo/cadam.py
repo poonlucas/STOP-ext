@@ -5,7 +5,6 @@ import math
 
 import torch
 from torch.optim import Optimizer
-from torch.optim.optimizer import _get_value
 
 
 class CAdam(Optimizer):
