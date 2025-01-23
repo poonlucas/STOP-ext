@@ -110,7 +110,7 @@ def run_trial(seed,
         submitFile += 'should_transfer_files = YES\n'
         submitFile += 'when_to_transfer_output = ON_EXIT\n'
 
-        setup_files = '/staging/llpoon/research.tar.gz'
+        setup_files = 'file:///staging/llpoon/research.tar.gz'
         common_main_files = 'run_single_continual.py, policies.py, utils.py, cleanrl_algo'
 
         domains = 'server_allocation.py, nmodel.py, criss_cross.py, env_configs.py'
