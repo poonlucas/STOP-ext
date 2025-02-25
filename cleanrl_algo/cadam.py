@@ -42,65 +42,66 @@ class CAdam(Optimizer):
                 loss = closure()
 
         for group in self.param_groups:
+
+            lr = group['lr']
+            eps = group['eps']
+
             params_with_grad = []
             grads = []
             exp_avgs = []
             exp_avg_sqs = []
-            max_exp_avg_sqs = []
             state_steps = []
             beta1, beta2 = group['betas']
 
             for p in group['params']:
-                if p.grad is not None:
-                    params_with_grad.append(p)
-                    if p.grad.is_sparse:
-                        raise RuntimeError('Adam does not support sparse gradients, please consider SparseAdam instead')
-                    grads.append(p.grad)
 
-                    state = self.state[p]
+                if p.grad is None:
+                    continue
 
-                    # Lazy state initialization
-                    if len(state) == 0:
-                        # note(crcrpar): [special device hosting for step]
-                        # Deliberately host `step` on CPU if both capturable and fused are off.
-                        # This is because kernel launches are costly on CUDA and XLA.
-                        state['step'] = torch.tensor(0.0, dtype=torch.float32)
-                        # Exponential moving average of gradient values
-                        state['exp_avg'] = torch.zeros_like(p, memory_format=torch.preserve_format)
-                        # Exponential moving average of squared gradient values
-                        state['exp_avg_sq'] = torch.zeros_like(p, memory_format=torch.preserve_format)
+                params_with_grad.append(p)
+                grads.append(p.grad)
 
-                    exp_avgs.append(state['exp_avg'])
-                    exp_avg_sqs.append(state['exp_avg_sq'])
+                state = self.state[p]
 
-                    state_steps.append(state['step'])
+                # Lazy state initialization
+                if len(state) == 0:
+                    state['step'] = torch.tensor(0.0, dtype=torch.float32)
+                    # Exponential moving average of gradient values
+                    state['exp_avg'] = torch.zeros_like(p, memory_format=torch.preserve_format)
+                    # Exponential moving average of squared gradient values
+                    state['exp_avg_sq'] = torch.zeros_like(p, memory_format=torch.preserve_format)
 
-                    for i, param in enumerate(params_with_grad):
-                        grad = grads[i]
-                        exp_avg = exp_avgs[i]
-                        exp_avg_sq = exp_avg_sqs[i]
-                        step_t = state_steps[i]
+                exp_avgs.append(state['exp_avg'])
+                exp_avg_sqs.append(state['exp_avg_sq'])
 
-                        step_t += 1
+                state_steps.append(state['step'])
 
-                        if group['weight_decay'] != 0:
-                            grad = grad.add(param, alpha=group['weight_decay'])
+                for i, param in enumerate(params_with_grad):
+                    grad = grads[i]
+                    exp_avg = exp_avgs[i]
+                    exp_avg_sq = exp_avg_sqs[i]
+                    step_t = state_steps[i]
 
-                        # Decay the first and second moment running average coefficient
-                        exp_avg.lerp_(grad, 1 - beta1)
-                        exp_avg_sq.mul_(beta2).addcmul_(grad, grad.conj(), value=1 - beta2)
+                    step_t += 1
 
-                        step = step_t.item()
+                    if group['weight_decay'] != 0:
+                        grad = grad.add(param, alpha=group['weight_decay'])
 
-                        bias_correction1 = 1 - beta1 ** step
-                        bias_correction2 = 1 - beta2 ** step
+                    # Decay the first and second moment running average coefficient
+                    exp_avg.lerp_(grad, 1 - beta1)
+                    exp_avg_sq.mul_(beta2).addcmul_(grad, grad.conj(), value=1 - beta2)
 
-                        step_size = group['lr'] / bias_correction1
+                    step = step_t.item()
 
-                        bias_correction2_sqrt = math.sqrt(bias_correction2)
+                    bias_correction1 = 1 - beta1 ** step
+                    bias_correction2 = 1 - beta2 ** step
 
-                        denom = (exp_avg_sq.sqrt() / bias_correction2_sqrt).add_(group['eps'])
+                    step_size = group['lr'] / bias_correction1
 
-                        param.addcdiv_(exp_avg, denom, value=-step_size)
+                    bias_correction2_sqrt = math.sqrt(bias_correction2)
+
+                    denom = (exp_avg_sq.sqrt() / bias_correction2_sqrt).add_(group['eps'])
+
+                    param.addcdiv_(exp_avg, denom, value=-step_size)
 
         return loss
