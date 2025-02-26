@@ -30,13 +30,6 @@ class Agent(nn.Module):
             nn.Tanh(),
             layer_init(nn.Linear(64, 1), std=1.0),
         )
-        self.lyp_critic = nn.Sequential(
-            layer_init(nn.Linear(np.array(env.observation_space.shape).prod(), 64)),
-            nn.ReLU(),
-            layer_init(nn.Linear(64, 64)),
-            nn.ReLU(),
-            layer_init(nn.Linear(64, 1), std=1.0),
-        )
         if isinstance(env.action_space, gym.spaces.Discrete):
             self.action_n = env.action_space.n
         elif isinstance(env.action_space, gym.spaces.MultiDiscrete):
@@ -50,9 +43,6 @@ class Agent(nn.Module):
         )
         self.env = env
         self.use_action_mask = use_action_mask
-
-    def get_lyp_value(self, x):
-        return self.lyp_critic(x)
 
     def get_value(self, x):
         return self.critic(x)
@@ -83,7 +73,8 @@ class Agent(nn.Module):
             prob_dist = None  # TODO: Probability of all combinations of action 1 and 2
             if action is None:
                 action = torch.stack([categorical.sample() for categorical in multi_categoricals])
-            logprob = torch.stack([categorical.log_prob(a) for a, categorical in zip(action, multi_categoricals)]).sum(0)
+            logprob = torch.stack([categorical.log_prob(a) for a, categorical in zip(action, multi_categoricals)]).sum(
+                0)
             entropy = torch.stack([categorical.entropy() for categorical in multi_categoricals]).sum(0)
             action = action.T
 
@@ -115,9 +106,7 @@ class ARPPO:
         self.env = env
         self.agent = Agent(env, use_action_mask=use_action_mask)
         self.learning_rate = learning_rate
-        self.optimizer = optim.Adam(self.agent.parameters(), \
-                                    lr=learning_rate, eps=1e-8, \
-                                    betas=adam_betas)
+        self.optimizer = optim.Adam(self.agent.parameters(), lr=learning_rate, eps=1e-8, betas=adam_betas)
 
         self.anneal_lr = anneal_lr
         self.num_steps = num_steps
@@ -138,7 +127,7 @@ class ARPPO:
         self.gamma = gamma
         self.gae_lambda = gae_lambda
 
-    def train(self, total_timesteps=100_000, lyp_critic=False):
+    def train(self, total_timesteps=100_000):
 
         print_freq = self.round_to_multiple(10_000, self.batch_size)
         backlog = []
@@ -232,10 +221,6 @@ class ARPPO:
                         advantages[t] = lastgaelam = delta + self.gamma * self.gae_lambda * nextnonterminal * lastgaelam
                 returns = advantages + values
 
-                if lyp_critic:
-                    next_lyp_value = self.agent.get_lyp_value(next_obs).reshape(-1)
-                    lyp_targets = rewards + self.gamma * next_lyp_value * (1 - next_done)
-
             # flatten the batch
             b_obs = obs.reshape((-1,) + self.env.observation_space.shape)
             b_logprobs = logprobs.reshape(-1)
@@ -300,10 +285,6 @@ class ARPPO:
 
                     self.optimizer.zero_grad()
                     loss.backward()
-                    if lyp_critic:
-                        lyp_values = self.agent.get_lyapunov_value(obs.reshape((-1,) + self.env.observation_space.shape))
-                        lyp_loss = ((lyp_values - lyp_targets) ** 2).mean()
-                        lyp_loss.backward()
                     nn.utils.clip_grad_norm_(self.agent.parameters(), self.max_grad_norm)
                     self.optimizer.step()
 
