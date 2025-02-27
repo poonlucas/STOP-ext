@@ -1,4 +1,5 @@
 from cleanrl_algo.arppo import ARPPO
+from cleanrl_algo.lyp_arppo import LYPARPPO
 import torch
 from torch import nn
 import pdb
@@ -367,7 +368,7 @@ class CleanRLPolicy:
                  adam_betas=(0.9, 0.9)):
 
         self.env = env
-        self.pi = ARPPO(self.env,
+        self.pi = LYPARPPO(self.env,
                         gamma=gamma,
                         learning_rate=learning_rate,
                         num_steps=num_steps,
