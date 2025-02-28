@@ -167,7 +167,7 @@ def get_env(mdp_num = 0):
     return env
 
 
-def _train_RL(env, algo_name, variant=None, state_transformation=None, fname=None):
+def _train_RL(env, algo_name, variant=None, lyp=False, state_transformation=None, fname=None):
     print('training {} {}'.format(algo_name, variant))
 
     env.set_horizon(-1)
@@ -179,6 +179,7 @@ def _train_RL(env, algo_name, variant=None, state_transformation=None, fname=Non
                        learning_rate=FLAGS.lr,
                        gamma=FLAGS.gamma,
                        variant=variant,
+                       lyp=lyp,
                        num_steps=FLAGS.truncated_horizon,
                        update_epochs=FLAGS.replay_epochs,
                        use_action_mask=FLAGS.use_action_mask,
@@ -206,8 +207,9 @@ def run_experiment_algo(env, algo_name):
         print('executing {} {}'.format(algo_name, FLAGS.state_transformation))
         # env.set_state_transformation(FLAGS.state_transformation)
         # env.env_method('set_state_transformation', FLAGS.state_transformation)
+        lyp = True if 'LYP' in algo_name else False
         pi, pi_stats = _train_RL(env, algo_name=algo_name, state_transformation=FLAGS.state_transformation, fname=fname,
-                                 variant=variant)
+                                 variant=variant, lyp=lyp)
         rl_bl = pi_stats['backlog']
         rl_bl = rl_bl[:int(
             FLAGS.deployed_interaction_steps / FLAGS.deployed_interaction_step_skip)]  # remove extra fluff that sb3 has
