@@ -20,21 +20,6 @@ def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
     return layer
 
 
-class LypNetwork(nn.Module):
-    def __init__(self, env):
-        super().__init__()
-        self.lyp = nn.Sequential(
-            layer_init(nn.Linear(np.array(env.observation_space.shape).prod(), 64)),
-            nn.Tanh(),
-            layer_init(nn.Linear(64, 64)),
-            nn.Tanh(),
-            layer_init(nn.Linear(64, 1), std=1.0),
-        )
-
-    def compute_loss(self, state, next_state):
-        return nn.functional.mse_loss(self.lyp(state.reshape(-1)), self.lyp(next_state))
-
-
 class Agent(nn.Module):
     def __init__(self, env, use_action_mask=False):
         super().__init__()
@@ -251,7 +236,7 @@ class LYPARPPO:
             b_values = values.reshape(-1)
 
             # Optimizing the policy and value network
-            b_inds = np.arange(self.batch_size - 1)
+            b_inds = np.arange(self.batch_size)
             clipfracs = []
 
             for epoch in range(self.update_epochs):
@@ -306,9 +291,10 @@ class LYPARPPO:
                     entropy_loss = entropy.mean()
 
                     # Lyapunov Stability
-                    stab = torch.mean(self.agent.get_value(b_obs[mb_inds + 1]) - self.agent.get_value(b_obs[mb_inds]))
+                    stab = self.agent.get_value(b_obs[mb_inds + 1]) - self.agent.get_value(b_obs[mb_inds])
+                    stab_loss = ((stab) / (stab.std() + 1e-8)).mean()
 
-                    loss = pg_loss - self.ent_coef * entropy_loss + v_loss * self.vf_coef + stab
+                    loss = pg_loss - self.ent_coef * entropy_loss + v_loss * self.vf_coef + stab_loss
 
                     self.optimizer.zero_grad()
                     loss.backward()

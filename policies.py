@@ -1,5 +1,4 @@
 from cleanrl_algo.arppo import ARPPO
-from cleanrl_algo.lyp_arppo import LYPARPPO
 import torch
 from torch import nn
 import pdb
@@ -362,18 +361,20 @@ class CleanRLPolicy:
                  max_grad_norm=0.5,
                  target_kl=None,
                  variant='zhang',
+                 lyp=False,
                  gamma=0.99,
                  gae_lambda=0.95,
                  use_action_mask=False,
                  adam_betas=(0.9, 0.9)):
 
         self.env = env
-        self.pi = LYPARPPO(self.env,
+        self.pi = ARPPO(self.env,
                         gamma=gamma,
                         learning_rate=learning_rate,
                         num_steps=num_steps,
                         update_epochs=update_epochs,
                         variant=variant,
+                        lyp=lyp,
                         use_action_mask=use_action_mask,
                         adam_betas=adam_betas)
 

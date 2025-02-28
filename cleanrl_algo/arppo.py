@@ -97,6 +97,7 @@ class ARPPO:
                  max_grad_norm=0.5,
                  target_kl=None,
                  variant='zhang',
+                 lyp=False,
                  gamma=0.99,
                  gae_lambda=0.95,
                  norm_adv=True,
@@ -124,6 +125,7 @@ class ARPPO:
         self.norm_adv = norm_adv
 
         self.variant = variant
+        self.lyp = lyp
         self.gamma = gamma
         self.gae_lambda = gae_lambda
 
@@ -230,7 +232,7 @@ class ARPPO:
             b_values = values.reshape(-1)
 
             # Optimizing the policy and value network
-            b_inds = np.arange(self.batch_size)
+            b_inds = np.arange(self.batch_size if not self.lyp else self.batch_size - 1)
             clipfracs = []
 
             for epoch in range(self.update_epochs):
@@ -280,8 +282,15 @@ class ARPPO:
                     else:
                         v_loss = 0.5 * ((newvalue - b_returns[mb_inds]) ** 2).mean()
 
+                    # Entropy Loss
                     entropy_loss = entropy.mean()
-                    loss = pg_loss - self.ent_coef * entropy_loss + v_loss * self.vf_coef
+
+                    # Lyapunov Stability Loss
+                    stab = self.agent.get_value(b_obs[mb_inds + 1]) - self.agent.get_value(b_obs[mb_inds])
+                    stab_loss = ((stab) / (stab.std() + 1e-8)).mean()
+
+                    loss = (pg_loss - self.ent_coef * entropy_loss + v_loss * self.vf_coef +
+                            (stab_loss if self.lyp else 0.0))
 
                     self.optimizer.zero_grad()
                     loss.backward()
