@@ -232,7 +232,7 @@ class ARPPO:
             b_values = values.reshape(-1)
 
             # Optimizing the policy and value network
-            b_inds = np.arange(self.batch_size if not self.lyp else self.batch_size - 1)
+            b_inds = np.arange(self.batch_size - 1 if self.lyp else self.batch_size)
             clipfracs = []
 
             for epoch in range(self.update_epochs):
