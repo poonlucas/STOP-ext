@@ -285,12 +285,13 @@ class ARPPO:
                     # Entropy Loss
                     entropy_loss = entropy.mean()
 
-                    # Lyapunov Stability Loss
-                    stab = self.agent.get_value(b_obs[mb_inds + 1]) - self.agent.get_value(b_obs[mb_inds])
-                    stab_loss = ((stab) / (stab.std() + 1e-8)).mean()
+                    loss = pg_loss - self.ent_coef * entropy_loss + v_loss * self.vf_coef
 
-                    loss = (pg_loss - self.ent_coef * entropy_loss + v_loss * self.vf_coef +
-                            (stab_loss if self.lyp else 0.0))
+                    # Lyapunov Stability Loss
+                    if self.lyp:
+                        stab = self.agent.get_value(b_obs[mb_inds + 1]) - self.agent.get_value(b_obs[mb_inds])
+                        stab_loss = ((stab) / (stab.std() + 1e-8)).mean()
+                        loss += stab_loss
 
                     self.optimizer.zero_grad()
                     loss.backward()

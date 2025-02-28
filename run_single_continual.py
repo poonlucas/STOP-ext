@@ -201,7 +201,7 @@ def run_experiment_algo(env, algo_name):
     vis_ns = []
     pi_stats = None
     next_native_states = None
-    if algo_name == 'PPO' or 'STOP' in algo_name:
+    if 'PPO' in algo_name or 'STOP' in algo_name:
         variant = 'zhang'
         rl_res = []
         print('executing {} {}'.format(algo_name, FLAGS.state_transformation))
