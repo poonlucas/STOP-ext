@@ -190,8 +190,8 @@ class LYPARPPO:
                 rewards[step] = reward  # torch.tensor(reward).view(-1)
                 next_obs, next_done = torch.Tensor(next_obs), torch.Tensor([next_done])
                 # Lyapunov
-                prev_lens = np.mean(self.agent.get_value(obs[step][:len(self.env.qs)] - self.env.goal))
-                curr_lens = np.mean(self.agent.get_value(next_obs[:len(self.env.qs)] - self.env.goal))
+                prev_lens = self.agent.get_value(obs[step][0])
+                curr_lens = self.agent.get_value(next_obs)
                 reward += -1 * (curr_lens - prev_lens)
                 backlog.append(infos['backlog'])
                 # action_choice.append((logprob, action))
