@@ -108,9 +108,6 @@ class LYPARPPO:
         self.learning_rate = learning_rate
         self.optimizer = optim.Adam(self.agent.parameters(), lr=learning_rate, eps=1e-8, betas=adam_betas)
 
-        # self.lyp_net = LypNetwork(env)
-        # self.lyp_optimizer = optim.Adam(self.lyp_net.parameters(), lr=learning_rate, eps=1e-8, betas=adam_betas)
-
         self.anneal_lr = anneal_lr
         self.num_steps = num_steps
         self.batch_size = num_steps
@@ -192,6 +189,10 @@ class LYPARPPO:
                 next_done = np.logical_or(terminations, truncations)
                 rewards[step] = reward  # torch.tensor(reward).view(-1)
                 next_obs, next_done = torch.Tensor(next_obs), torch.Tensor([next_done])
+                # Lyapunov
+                prev_lens = np.mean(self.agent.get_value(obs[step][:len(self.env.qs)] - self.env.goal))
+                curr_lens = np.mean(self.agent.get_value(next_obs[:len(self.env.qs)] - self.env.goal))
+                reward += -1 * (curr_lens - prev_lens)
                 backlog.append(infos['backlog'])
                 # action_choice.append((logprob, action))
                 visited_native_states.append(infos['native_state'])

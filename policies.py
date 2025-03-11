@@ -4,6 +4,8 @@ from torch import nn
 import pdb
 import numpy as np
 
+from cleanrl_algo.lyp_arppo import LYPARPPO
+
 
 # longest queue
 class LQ:
@@ -361,22 +363,31 @@ class CleanRLPolicy:
                  max_grad_norm=0.5,
                  target_kl=None,
                  variant='zhang',
-                 lyp=False,
                  gamma=0.99,
                  gae_lambda=0.95,
                  use_action_mask=False,
+                 lyp=False,
                  adam_betas=(0.9, 0.9)):
 
         self.env = env
-        self.pi = ARPPO(self.env,
-                        gamma=gamma,
-                        learning_rate=learning_rate,
-                        num_steps=num_steps,
-                        update_epochs=update_epochs,
-                        variant=variant,
-                        lyp=lyp,
-                        use_action_mask=use_action_mask,
-                        adam_betas=adam_betas)
+        if lyp:
+            self.pi = LYPARPPO(self.env,
+                               gamma=gamma,
+                               learning_rate=learning_rate,
+                               num_steps=num_steps,
+                               update_epochs=update_epochs,
+                               variant=variant,
+                               use_action_mask=use_action_mask,
+                               adam_betas=adam_betas)
+        else:
+            self.pi = ARPPO(self.env,
+                            gamma=gamma,
+                            learning_rate=learning_rate,
+                            num_steps=num_steps,
+                            update_epochs=update_epochs,
+                            variant=variant,
+                            use_action_mask=use_action_mask,
+                            adam_betas=adam_betas)
 
     def learn(self, total_timesteps):
         self.pi.train(total_timesteps=total_timesteps)

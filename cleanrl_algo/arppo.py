@@ -97,7 +97,6 @@ class ARPPO:
                  max_grad_norm=0.5,
                  target_kl=None,
                  variant='zhang',
-                 lyp=False,
                  gamma=0.99,
                  gae_lambda=0.95,
                  norm_adv=True,
@@ -191,8 +190,6 @@ class ARPPO:
                 next_done = np.logical_or(terminations, truncations)
                 rewards[step] = reward  # torch.tensor(reward).view(-1)
                 next_obs, next_done = torch.Tensor(next_obs), torch.Tensor([next_done])
-                # if 7750 <= iteration <= 8100:
-                #     action_proba.append(prob_dist[action].item())
                 backlog.append(infos['backlog'])
                 # action_choice.append((logprob, action))
                 visited_native_states.append(infos['native_state'])
@@ -232,7 +229,7 @@ class ARPPO:
             b_values = values.reshape(-1)
 
             # Optimizing the policy and value network
-            b_inds = np.arange(self.batch_size - 1 if self.lyp else self.batch_size)
+            b_inds = np.arange(self.batch_size)
             clipfracs = []
 
             for epoch in range(self.update_epochs):
@@ -286,12 +283,6 @@ class ARPPO:
                     entropy_loss = entropy.mean()
 
                     loss = pg_loss - self.ent_coef * entropy_loss + v_loss * self.vf_coef
-
-                    # Lyapunov Stability Loss
-                    if self.lyp:
-                        stab = self.agent.get_value(b_obs[mb_inds + 1]) - self.agent.get_value(b_obs[mb_inds])
-                        stab_loss = ((stab) / (stab.std() + 1e-8)).mean()
-                        loss += stab_loss
 
                     self.optimizer.zero_grad()
                     loss.backward()

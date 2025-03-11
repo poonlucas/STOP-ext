@@ -183,7 +183,6 @@ def main():  # noqa
         # ('STOP-L', 'stab', 'symloge', 1.),
         # ('STOP-1.5', 'stab', 'symloge', 1.5),
         # ('STOP-Q', 'stab', 'sigmoid', 2.),
-        ('STOP-LYP-2.5', 'stab', 'sigmoid', 2.5),
         ('STOP-2.5', 'stab', 'sigmoid', 2.5),
         ('PPO-LYP', 'opt', 'sigmoid', None),
         ('PPO', 'opt', 'sigmoid', None),
