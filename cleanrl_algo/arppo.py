@@ -124,7 +124,6 @@ class ARPPO:
         self.norm_adv = norm_adv
 
         self.variant = variant
-        self.lyp = lyp
         self.gamma = gamma
         self.gae_lambda = gae_lambda
 
