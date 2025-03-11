@@ -291,11 +291,7 @@ class LYPARPPO:
                     # Entropy Loss
                     entropy_loss = entropy.mean()
 
-                    # Lyapunov Stability
-                    stab = self.agent.get_value(b_obs[mb_inds + 1]) - self.agent.get_value(b_obs[mb_inds])
-                    stab_loss = ((stab) / (stab.std() + 1e-8)).mean()
-
-                    loss = pg_loss - self.ent_coef * entropy_loss + v_loss * self.vf_coef + stab_loss
+                    loss = pg_loss - self.ent_coef * entropy_loss + v_loss * self.vf_coef
 
                     self.optimizer.zero_grad()
                     loss.backward()
