@@ -149,7 +149,6 @@ def collect_data():
 
             if 'STOP' in algo or 'LYP' in algo:
                 label = label + "-[" + names[-2] + "," + names[-1][:-4] + "]"
-                print(label, summary['seed'], np.min(results[algo]['avg_backlog'][500000:]))
 
             if label not in data:
                 data[label] = {
