@@ -12,7 +12,7 @@ if __name__ == '__main__':
     t2 = [1 * i for i in range(2000000)]
     #dir = "results/queue/betas"
     #dir = "results/queue/betas_new/mdp2"
-    dir = "results/hihi"
+    dir = "results/lypcritic"
     beta = "0.8"
     # avg_backlog_lim = [1.7, 1.95]
     avg_backlog_lim = [10, 25]
@@ -25,7 +25,7 @@ if __name__ == '__main__':
         # 'results_queue_main_mdp_2/env_queue_exp_main_algo_STOP-1.5_seed_553395_mdp-num_2_truncated-horizon_200_lr_0.0003_epochs_10_adam-beta_0.9.npy'
         names = f_name.split('_')
         summary = np.load(f_name, allow_pickle=True).item()
-        results = summary['results']['STOP-2.5']
+        results = summary['results']['PPO-LYP']
 
         # Loss
         fig, ax1 = plt.subplots()
