@@ -20,16 +20,27 @@ def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
     return layer
 
 
+class SimpleCritic(nn.Module):
+    def __init__(self, obs_shape):
+        super().__init__()
+        self.w = nn.Parameter(torch.ones(2 * obs_shape, dtype=torch.float32))
+
+    def forward(self, x):
+        x_square = torch.pow(x, 2)
+        return torch.matmul(torch.cat((x_square, x), dim=-1), self.w.unsqueeze(0).T)
+
+
 class Agent(nn.Module):
     def __init__(self, env, use_action_mask=False):
         super().__init__()
-        self.critic = nn.Sequential(
-            layer_init(nn.Linear(np.array(env.observation_space.shape).prod(), 64)),
-            nn.Tanh(),
-            layer_init(nn.Linear(64, 64)),
-            nn.Tanh(),
-            layer_init(nn.Linear(64, 1), std=1.0),
-        )
+        self.critic = SimpleCritic(np.array(env.observation_space.shape).prod())
+        # self.critic = nn.Sequential(
+        #     layer_init(nn.Linear(np.array(env.observation_space.shape).prod(), 64)),
+        #     nn.Tanh(),
+        #     layer_init(nn.Linear(64, 64)),
+        #     nn.Tanh(),
+        #     layer_init(nn.Linear(64, 1), std=1.0),
+        # )
         if isinstance(env.action_space, gym.spaces.Discrete):
             self.action_n = env.action_space.n
         elif isinstance(env.action_space, gym.spaces.MultiDiscrete):
@@ -135,6 +146,7 @@ class LYPARPPO:
         # action_choice = []
         self.actor_weight_norm = []
         self.critic_weight_norm = []
+        self.critic_weight = []
         self.actor_dormant = []
         self.critic_dormant = []
         self.total_losses = []
@@ -254,6 +266,7 @@ class LYPARPPO:
                         _, newlogprob, entropy, newvalue, _ = self.agent.get_action_and_value(b_obs[mb_inds],
                                                                                               b_actions.long()[
                                                                                                   mb_inds].T)
+
                     logratio = newlogprob - b_logprobs[mb_inds]
                     ratio = logratio.exp()
 
@@ -309,14 +322,15 @@ class LYPARPPO:
             actor_weights = torch.cat((torch.flatten(self.agent.actor[0].weight),
                                        torch.flatten(self.agent.actor[2].weight),
                                        torch.flatten(self.agent.actor[4].weight)))
-            critic_weights = torch.cat((torch.flatten(self.agent.critic[0].weight),
-                                        torch.flatten(self.agent.critic[2].weight),
-                                        torch.flatten(self.agent.critic[4].weight)))
+            # critic_weights = torch.cat((torch.flatten(self.agent.critic[0].weight),
+            #                             torch.flatten(self.agent.critic[2].weight),
+            #                             torch.flatten(self.agent.critic[4].weight)))
 
             self.actor_dormant.append((torch.abs(actor_weights) < 0.1).sum().item())
-            self.critic_dormant.append((torch.abs(critic_weights) < 0.1).sum().item())
+            # self.critic_dormant.append((torch.abs(critic_weights) < 0.1).sum().item())
             self.actor_weight_norm.append(torch.abs(actor_weights).mean().item())
-            self.critic_weight_norm.append(torch.abs(critic_weights).mean().item())
+            # self.critic_weight_norm.append(torch.abs(critic_weights).mean().item())
+            self.critic_weight.append(self.agent.critic.w.detach)
             self.total_losses.append(loss.item())
             self.value_losses.append(v_loss.item())
             self.policy_losses.append(pg_loss.item())
@@ -343,6 +357,7 @@ class LYPARPPO:
             'critic_dormant': self.critic_dormant,
             'actor_weight_norm': self.actor_weight_norm,
             'critic_weight_norm': self.actor_weight_norm,
+            'critic_weight': self.critic_weight,
             'total_losses': self.total_losses,
             'value_losses': self.value_losses,
             'policy_losses': self.policy_losses,
