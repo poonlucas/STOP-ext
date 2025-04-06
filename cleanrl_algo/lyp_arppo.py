@@ -201,7 +201,7 @@ class LYPARPPO:
                 next_done = np.logical_or(terminations, truncations)
                 rewards[step] = reward  # torch.tensor(reward).view(-1)
                 next_obs, next_done = torch.Tensor(next_obs), torch.Tensor([next_done])
-                with torch.no_grad:
+                with torch.no_grad():
                     # Lyapunov
                     prev_lens = self.agent.get_value(obs[step][0])
                     curr_lens = self.agent.get_value(next_obs)
