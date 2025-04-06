@@ -158,6 +158,9 @@ def collect_data():
                     'unstable_frac': [],
                     'unstable_adv_mean': [],
                 }
+
+            print(label, summary['seed'], np.min(results[algo]['avg_backlog'][500000:]))
+
             data[label]['avg_backlog'].append(results[algo]['avg_backlog'] if 'avg_backlog' in results[algo] else 0)
             data[label]['unstable_frac'].append(results[algo]['unstable_frac'] if 'unstable_frac' in results[algo] else 0)
             data[label]['unstable_adv_mean'].append(results[algo]['unstable_adv_mean'] if 'unstable_adv_mean' in results[algo] else 0)

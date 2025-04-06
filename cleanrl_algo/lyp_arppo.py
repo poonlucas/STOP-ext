@@ -23,7 +23,7 @@ def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
 class SimpleCritic(nn.Module):
     def __init__(self, obs_shape):
         super().__init__()
-        self.w = nn.Parameter(torch.ones(2 * obs_shape, dtype=torch.float32))
+        self.w = nn.Parameter(-torch.ones(2 * obs_shape, dtype=torch.float32))
 
     def forward(self, x):
         x_square = torch.pow(x, 2)
@@ -201,10 +201,11 @@ class LYPARPPO:
                 next_done = np.logical_or(terminations, truncations)
                 rewards[step] = reward  # torch.tensor(reward).view(-1)
                 next_obs, next_done = torch.Tensor(next_obs), torch.Tensor([next_done])
-                # Lyapunov
-                prev_lens = self.agent.get_value(obs[step][0])
-                curr_lens = self.agent.get_value(next_obs)
-                reward += -1 * (curr_lens - prev_lens)
+                with torch.no_grad:
+                    # Lyapunov
+                    prev_lens = self.agent.get_value(obs[step][0])
+                    curr_lens = self.agent.get_value(next_obs)
+                    reward += -1 * (curr_lens - prev_lens)
                 backlog.append(infos['backlog'])
                 # action_choice.append((logprob, action))
                 visited_native_states.append(infos['native_state'])

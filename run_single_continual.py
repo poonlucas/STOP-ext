@@ -304,6 +304,7 @@ def main():
                 'critic_dormant': pi_stats['critic_dormant'],
                 'actor_weight_norm': pi_stats['actor_weight_norm'],
                 'critic_weight_norm': pi_stats['critic_weight_norm'],
+                'critic_weight': pi_stats['critic_weight'],
                 'total_losses': pi_stats['total_losses'],
                 'value_losses': pi_stats['value_losses'],
                 'policy_losses': pi_stats['policy_losses'],
