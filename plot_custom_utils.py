@@ -19,7 +19,7 @@ from rliable import plot_utils
 
 queue_lim = {
     0: (1.3, 1.8),
-    1: (1.7, None), # 1.7, 1.95
+    1: (1.7, 300), # 1.7, 1.95
     2: (10, 25), # 25
 }
 nmodel_lim = {

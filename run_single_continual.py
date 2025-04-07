@@ -298,7 +298,7 @@ def main():
             'visited_native_states': visited_native_states[idx]
             # 'avg_backlog_changes': backlog_changes[idx]
         }
-        if 'STOP' in algo:
+        if 'STOP' in algo or 'PPO-LYP' in algo:
             summary['results'][algo].update({
                 'actor_dormant': pi_stats['actor_dormant'],
                 'critic_dormant': pi_stats['critic_dormant'],

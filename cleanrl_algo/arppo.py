@@ -137,6 +137,7 @@ class ARPPO:
         self.critic_weight_norm = []
         self.actor_dormant = []
         self.critic_dormant = []
+        self.critic_weight = []
         self.total_losses = []
         self.value_losses = []
         self.policy_losses = []
@@ -333,6 +334,7 @@ class ARPPO:
             'critic_dormant': self.critic_dormant,
             'actor_weight_norm': self.actor_weight_norm,
             'critic_weight_norm': self.actor_weight_norm,
+            'critic_weight': self.critic_weight,
             'total_losses': self.total_losses,
             'value_losses': self.value_losses,
             'policy_losses': self.policy_losses,
