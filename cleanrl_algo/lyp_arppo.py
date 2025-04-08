@@ -33,14 +33,14 @@ class SimpleCritic(nn.Module):
 class Agent(nn.Module):
     def __init__(self, env, use_action_mask=False):
         super().__init__()
-        self.critic = SimpleCritic(np.array(env.observation_space.shape).prod())
-        # self.critic = nn.Sequential(
-        #     layer_init(nn.Linear(np.array(env.observation_space.shape).prod(), 64)),
-        #     nn.Tanh(),
-        #     layer_init(nn.Linear(64, 64)),
-        #     nn.Tanh(),
-        #     layer_init(nn.Linear(64, 1), std=1.0),
-        # )
+        # self.critic = SimpleCritic(np.array(env.observation_space.shape).prod())
+        self.critic = nn.Sequential(
+            layer_init(nn.Linear(np.array(env.observation_space.shape).prod(), 64)),
+            nn.Tanh(),
+            layer_init(nn.Linear(64, 64)),
+            nn.Tanh(),
+            layer_init(nn.Linear(64, 1), std=1.0),
+        )
         if isinstance(env.action_space, gym.spaces.Discrete):
             self.action_n = env.action_space.n
         elif isinstance(env.action_space, gym.spaces.MultiDiscrete):
@@ -323,15 +323,15 @@ class LYPARPPO:
             actor_weights = torch.cat((torch.flatten(self.agent.actor[0].weight),
                                        torch.flatten(self.agent.actor[2].weight),
                                        torch.flatten(self.agent.actor[4].weight)))
-            # critic_weights = torch.cat((torch.flatten(self.agent.critic[0].weight),
-            #                             torch.flatten(self.agent.critic[2].weight),
-            #                             torch.flatten(self.agent.critic[4].weight)))
+            critic_weights = torch.cat((torch.flatten(self.agent.critic[0].weight),
+                                        torch.flatten(self.agent.critic[2].weight),
+                                        torch.flatten(self.agent.critic[4].weight)))
 
             self.actor_dormant.append((torch.abs(actor_weights) < 0.1).sum().item())
-            # self.critic_dormant.append((torch.abs(critic_weights) < 0.1).sum().item())
+            self.critic_dormant.append((torch.abs(critic_weights) < 0.1).sum().item())
             self.actor_weight_norm.append(torch.abs(actor_weights).mean().item())
-            # self.critic_weight_norm.append(torch.abs(critic_weights).mean().item())
-            self.critic_weight.append(self.agent.critic.w.detach)
+            self.critic_weight_norm.append(torch.abs(critic_weights).mean().item())
+            # self.critic_weight.append(self.agent.critic.w.detach())
             self.total_losses.append(loss.item())
             self.value_losses.append(v_loss.item())
             self.policy_losses.append(pg_loss.item())
