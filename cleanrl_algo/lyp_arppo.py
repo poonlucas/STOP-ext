@@ -1,7 +1,4 @@
 # docs and experiment results can be found at https://docs.cleanrl.dev/rl-algorithms/ppo/#ppopy
-import os
-import random
-import time
 import pdb
 
 import gymnasium as gym
@@ -20,20 +17,9 @@ def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
     return layer
 
 
-class SimpleCritic(nn.Module):
-    def __init__(self, obs_shape):
-        super().__init__()
-        self.w = nn.Parameter(-torch.ones(2 * obs_shape, dtype=torch.float32))
-
-    def forward(self, x):
-        x_square = torch.pow(x, 2)
-        return torch.matmul(torch.cat((x_square, x), dim=-1), self.w.unsqueeze(0).T)
-
-
 class Agent(nn.Module):
     def __init__(self, env, use_action_mask=False):
         super().__init__()
-        # self.critic = SimpleCritic(np.array(env.observation_space.shape).prod())
         self.critic = nn.Sequential(
             layer_init(nn.Linear(np.array(env.observation_space.shape).prod(), 64)),
             nn.Tanh(),
@@ -92,7 +78,7 @@ class Agent(nn.Module):
         return action, logprob, entropy, self.critic(x), prob_dist
 
 
-class LYPARPPO:
+class ARPPO:
     def __init__(self, env,
                  num_envs=1,
                  num_minibatches=4,
@@ -146,9 +132,9 @@ class LYPARPPO:
         # action_choice = []
         self.actor_weight_norm = []
         self.critic_weight_norm = []
-        self.critic_weight = []
         self.actor_dormant = []
         self.critic_dormant = []
+        self.critic_weight = []
         self.total_losses = []
         self.value_losses = []
         self.policy_losses = []
@@ -201,20 +187,10 @@ class LYPARPPO:
                 next_done = np.logical_or(terminations, truncations)
                 rewards[step] = reward  # torch.tensor(reward).view(-1)
                 next_obs, next_done = torch.Tensor(next_obs), torch.Tensor([next_done])
-                with torch.no_grad():
-                    # Lyapunov
-                    prev_lens = self.agent.get_value(obs[step][0])
-                    curr_lens = self.agent.get_value(next_obs)
-                    reward += -1 * (curr_lens - prev_lens)
                 backlog.append(infos['backlog'])
                 # action_choice.append((logprob, action))
                 visited_native_states.append(infos['native_state'])
                 time.append(infos['time'])
-
-                # self.lyp_optimizer.zero_grad()
-                # lyp_loss = self.lyp_net.compute_loss(obs[step], next_obs)
-                # lyp_loss.backward()
-                # self.lyp_optimizer.step()
 
             rew_running_mean = (1 - rew_tau) * rew_running_mean + rew_tau * torch.mean(rewards, axis=0)
             mean_rew = rew_running_mean
@@ -222,7 +198,7 @@ class LYPARPPO:
             with torch.no_grad():
                 next_value = self.agent.get_value(next_obs).reshape(-1)
                 advantages = torch.zeros_like(rewards)
-                lastgaelam = 0
+                returns = torch.zeros_like(rewards)
                 for t in reversed(range(self.num_steps)):
                     if t == self.num_steps - 1:
                         nextnonterminal = 1.0 - next_done
@@ -231,15 +207,8 @@ class LYPARPPO:
                         nextnonterminal = 1.0 - dones[t + 1]
                         nextvalues = values[t + 1]
 
-                    if self.variant == 'zhang':
-                        sub_diff = rewards[t] - mean_rew
-                        # average reward
-                        target = sub_diff + nextvalues * nextnonterminal
-                        advantages[t] = target - values[t]
-                    elif self.variant == 'discounted':
-                        delta = rewards[t] + self.gamma * nextvalues * nextnonterminal - values[t]
-                        advantages[t] = lastgaelam = delta + self.gamma * self.gae_lambda * nextnonterminal * lastgaelam
-                returns = advantages + values
+                    returns[t] = rewards[t] - mean_rew + nextvalues * nextnonterminal
+                    advantages[t] = returns[t] - values[t]
 
             # flatten the batch
             b_obs = obs.reshape((-1,) + self.env.observation_space.shape)
@@ -265,9 +234,7 @@ class LYPARPPO:
 
                     elif isinstance(self.env.action_space, gym.spaces.MultiDiscrete):
                         _, newlogprob, entropy, newvalue, _ = self.agent.get_action_and_value(b_obs[mb_inds],
-                                                                                              b_actions.long()[
-                                                                                                  mb_inds].T)
-
+                                                                                              b_actions.long()[mb_inds].T)
                     logratio = newlogprob - b_logprobs[mb_inds]
                     ratio = logratio.exp()
 
@@ -331,7 +298,6 @@ class LYPARPPO:
             self.critic_dormant.append((torch.abs(critic_weights) < 0.1).sum().item())
             self.actor_weight_norm.append(torch.abs(actor_weights).mean().item())
             self.critic_weight_norm.append(torch.abs(critic_weights).mean().item())
-            # self.critic_weight.append(self.agent.critic.w.detach())
             self.total_losses.append(loss.item())
             self.value_losses.append(v_loss.item())
             self.policy_losses.append(pg_loss.item())

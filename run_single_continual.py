@@ -51,7 +51,7 @@ parser.add_argument('--use_action_mask', default=False, type=str2bool)
 parser.add_argument('--lyp_power', default=1., type=float)
 
 parser.add_argument('--replay_epochs', default=10, type=int)
-parser.add_argument('--adam_betas', nargs=2, default=[0.9, 0.9], type=float)
+parser.add_argument('--adam_betas', nargs=2, default=[0.9, 0.9**2], type=float)
 
 parser.add_argument('--truncated_horizon', default=2048, type=int)  # same as train_freq in DQN
 parser.add_argument('--deployed_interaction_steps', default=250000, type=int)
