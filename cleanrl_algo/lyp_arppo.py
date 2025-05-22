@@ -78,7 +78,7 @@ class Agent(nn.Module):
         return action, logprob, entropy, self.critic(x), prob_dist
 
 
-class ARPPO:
+class LYPARPPO:
     def __init__(self, env,
                  num_envs=1,
                  num_minibatches=4,
